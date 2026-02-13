@@ -1,0 +1,1167 @@
+/* DOS Game Card Styles */
+.dos-game {
+  font-family: sans-serif;
+  min-height: 100vh;
+}
+
+.dos-card {
+  width: 80px;
+  height: 120px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4em;
+  font-weight: bold;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 1px 2px 6px #0006;
+  margin-bottom: 8px;
+  position: relative;
+  overflow: hidden;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6), 0 0 4px rgba(255,255,255,0.4);
+  background-image: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.1) 100%);
+  transition: transform 0.4s ease-out;
+  transform-style: preserve-3d;
+  user-select: none;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+/* Card colors */
+.dos-card.red {
+  background-color: #e53935;
+  background-image:
+    radial-gradient(circle at 70% 25%, #ffcdd2 0%, transparent 30%),
+    radial-gradient(circle at 25% 25%, #ffcdd2 0%, transparent 20%),
+    radial-gradient(circle at 50% 40%, #ff8a80 0%, transparent 35%),
+    radial-gradient(circle at 80% 60%, #ff5252 0%, transparent 25%),
+    radial-gradient(circle at 20% 60%, #ff5252 0%, transparent 25%),
+    radial-gradient(circle at 50% 80%, #d50000 0%, transparent 35%),
+    linear-gradient(135deg, #b71c1c 0%, #e53935 40%, #ef5350 60%, #ff8a80 100%);
+  box-shadow: 0 2px 10px rgba(183, 28, 28, 0.4);
+  border-image: linear-gradient(135deg, #ffcdd2, #e53935, #b71c1c) 1;
+}
+
+.dos-card.yellow {
+  background-color: #fbc02d;
+  color: #222;
+  background-image:
+    radial-gradient(circle at 70% 25%, #fff9c4 0%, transparent 30%),
+    radial-gradient(circle at 25% 25%, #fff9c4 0%, transparent 20%),
+    radial-gradient(circle at 50% 40%, #ffee58 0%, transparent 35%),
+    radial-gradient(circle at 80% 60%, #ffd600 0%, transparent 25%),
+    radial-gradient(circle at 20% 60%, #ffd600 0%, transparent 25%),
+    radial-gradient(circle at 50% 80%, #ff6f00 0%, transparent 35%),
+    linear-gradient(135deg, #ff8f00 0%, #fbc02d 40%, #ffeb3b 60%, #fff9c4 100%);
+  box-shadow: 0 2px 10px rgba(255, 143, 0, 0.4);
+  border-image: linear-gradient(135deg, #fff9c4, #fbc02d, #ff8f00) 1;
+}
+
+.dos-card.green {
+  background-color: #43a047;
+  background-image:
+    radial-gradient(circle at 70% 25%, #c8e6c9 0%, transparent 30%),
+    radial-gradient(circle at 25% 25%, #c8e6c9 0%, transparent 20%),
+    radial-gradient(circle at 50% 40%, #81c784 0%, transparent 35%),
+    radial-gradient(circle at 80% 60%, #4caf50 0%, transparent 25%),
+    radial-gradient(circle at 20% 60%, #4caf50 0%, transparent 25%),
+    radial-gradient(circle at 50% 80%, #1b5e20 0%, transparent 35%),
+    linear-gradient(135deg, #1b5e20 0%, #43a047 40%, #66bb6a 60%, #c8e6c9 100%);
+  box-shadow: 0 2px 10px rgba(27, 94, 32, 0.4);
+  border-image: linear-gradient(135deg, #c8e6c9, #43a047, #1b5e20) 1;
+}
+
+.dos-card.blue {
+  background-color: #1e88e5;
+  background-image:
+    radial-gradient(circle at 70% 25%, #e3f2fd 0%, transparent 30%),
+    radial-gradient(circle at 25% 25%, #e3f2fd 0%, transparent 20%),
+    radial-gradient(circle at 50% 40%, #90caf9 0%, transparent 35%),
+    radial-gradient(circle at 80% 60%, #42a5f5 0%, transparent 25%),
+    radial-gradient(circle at 20% 60%, #42a5f5 0%, transparent 25%),
+    radial-gradient(circle at 50% 80%, #0d47a1 0%, transparent 35%),
+    linear-gradient(135deg, #0d47a1 0%, #1e88e5 40%, #64b5f6 60%, #e3f2fd 100%);
+  box-shadow: 0 2px 10px rgba(13, 71, 161, 0.4);
+  border-image: linear-gradient(135deg, #e3f2fd, #1e88e5, #0d47a1) 1;
+}
+
+/* Flipped card colors */
+.dos-card.lavender {
+  background-color: #9c64a6;
+  background-image:
+    radial-gradient(circle at 70% 25%, #d1c4e9 0%, transparent 30%),
+    radial-gradient(circle at 25% 25%, #d1c4e9 0%, transparent 20%),
+    radial-gradient(circle at 50% 40%, #b39ddb 0%, transparent 35%),
+    radial-gradient(circle at 80% 60%, #9575cd 0%, transparent 25%),
+    radial-gradient(circle at 20% 60%, #9575cd 0%, transparent 25%),
+    radial-gradient(circle at 50% 80%, #673ab7 0%, transparent 35%),
+    linear-gradient(135deg, #5e35b1 0%, #9c64a6 40%, #b39ddb 60%, #d1c4e9 100%);
+  box-shadow: 0 2px 10px rgba(94, 53, 177, 0.4);
+  border-image: linear-gradient(135deg, #d1c4e9, #9c64a6, #5e35b1) 1;
+}
+
+.dos-card.skyblue {
+  background-color: #48c9b0;
+  color: #222;
+  background-image:
+    radial-gradient(circle at 70% 25%, #b3e5fc 0%, transparent 30%),
+    radial-gradient(circle at 25% 25%, #b3e5fc 0%, transparent 20%),
+    radial-gradient(circle at 50% 40%, #81d4fa 0%, transparent 35%),
+    radial-gradient(circle at 80% 60%, #4fc3f7 0%, transparent 25%),
+    radial-gradient(circle at 20% 60%, #4fc3f7 0%, transparent 25%),
+    radial-gradient(circle at 50% 80%, #29b6f6 0%, transparent 35%),
+    linear-gradient(135deg, #039be5 0%, #48c9b0 40%, #81d4fa 60%, #b3e5fc 100%);
+  box-shadow: 0 2px 10px rgba(3, 155, 229, 0.4);
+  border-image: linear-gradient(135deg, #b3e5fc, #48c9b0, #039be5) 1;
+}
+
+.dos-card.teal {
+  background-color: #00897b;
+  background-image:
+    radial-gradient(circle at 70% 25%, #b2dfdb 0%, transparent 30%),
+    radial-gradient(circle at 25% 25%, #b2dfdb 0%, transparent 20%),
+    radial-gradient(circle at 50% 40%, #80cbc4 0%, transparent 35%),
+    radial-gradient(circle at 80% 60%, #4db6ac 0%, transparent 25%),
+    radial-gradient(circle at 20% 60%, #4db6ac 0%, transparent 25%),
+    radial-gradient(circle at 50% 80%, #00695c 0%, transparent 35%),
+    linear-gradient(135deg, #00695c 0%, #00897b 40%, #4db6ac 60%, #b2dfdb 100%);
+  box-shadow: 0 2px 10px rgba(0, 105, 92, 0.4);
+  border-image: linear-gradient(135deg, #b2dfdb, #00897b, #00695c) 1;
+}
+
+.dos-card.indigo {
+  background-color: #1a237e;
+  background-image:
+    radial-gradient(circle at 70% 25%, #9fa8da 0%, transparent 30%),
+    radial-gradient(circle at 25% 25%, #9fa8da 0%, transparent 20%),
+    radial-gradient(circle at 50% 40%, #7986cb 0%, transparent 35%),
+    radial-gradient(circle at 80% 60%, #5c6bc0 0%, transparent 25%),
+    radial-gradient(circle at 20% 60%, #5c6bc0 0%, transparent 25%),
+    radial-gradient(circle at 50% 80%, #0d1a60 0%, transparent 35%),
+    linear-gradient(135deg, #0d1a60 0%, #1a237e 40%, #5c6bc0 60%, #9fa8da 100%);
+  box-shadow: 0 2px 10px rgba(13, 26, 96, 0.4);
+  border-image: linear-gradient(135deg, #c5cae9, #3949ab, #283593) 1;
+}
+
+.dos-card.white {
+  background-color: #ffffff;
+  color: #222;
+  background-image:
+    radial-gradient(circle at 70% 25%, #f5f5f5 0%, transparent 30%),
+    radial-gradient(circle at 25% 25%, #f0f0f0 0%, transparent 20%),
+    radial-gradient(circle at 50% 40%, #e8e8e8 0%, transparent 35%),
+    radial-gradient(circle at 80% 60%, #f0f0f0 0%, transparent 25%),
+    radial-gradient(circle at 20% 60%, #f0f0f0 0%, transparent 25%),
+    radial-gradient(circle at 50% 80%, #e0e0e0 0%, transparent 35%),
+    linear-gradient(135deg, #e0e0e0 0%, #ffffff 40%, #fafafa 60%, #f5f5f5 100%);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  text-shadow: none;
+  border: 2px solid #999;
+}
+
+.dos-card.wild {
+  background: linear-gradient(135deg, #e53935 25%, #fbc02d 50%, #43a047 75%, #1e88e5 100%);
+  color: #222;
+  position: relative;
+  overflow: hidden;
+}
+
+.dos-card.face-down {
+  background: linear-gradient(135deg, #333 0%, #555 50%, #333 100%);
+  color: #888;
+  cursor: default;
+  border-color: #666;
+}
+
+/* Butterfly wing vein patterns */
+.dos-card.red::before,
+.dos-card.yellow::before,
+.dos-card.green::before,
+.dos-card.blue::before,
+.dos-card.lavender::before,
+.dos-card.skyblue::before,
+.dos-card.teal::before,
+.dos-card.indigo::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1;
+  background-image:
+    linear-gradient(180deg, transparent 48%, rgba(255,255,255,0.5) 49%, rgba(255,255,255,0.5) 51%, transparent 52%),
+    linear-gradient(150deg, transparent 48%, rgba(255,255,255,0.4) 49%, rgba(255,255,255,0.4) 51%, transparent 52%),
+    linear-gradient(210deg, transparent 48%, rgba(255,255,255,0.4) 49%, rgba(255,255,255,0.4) 51%, transparent 52%),
+    linear-gradient(120deg, transparent 48%, rgba(255,255,255,0.3) 49%, rgba(255,255,255,0.3) 51%, transparent 52%),
+    linear-gradient(240deg, transparent 48%, rgba(255,255,255,0.3) 49%, rgba(255,255,255,0.3) 51%, transparent 52%);
+  background-size: 100% 100%;
+  background-position: center;
+  pointer-events: none;
+}
+
+.dos-card.red::after,
+.dos-card.yellow::after,
+.dos-card.green::after,
+.dos-card.blue::after,
+.dos-card.lavender::after,
+.dos-card.skyblue::after,
+.dos-card.teal::after,
+.dos-card.indigo::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1;
+  background-image:
+    repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.1) 8px, rgba(255,255,255,0.1) 9px),
+    repeating-linear-gradient(135deg, transparent, transparent 8px, rgba(255,255,255,0.1) 8px, rgba(255,255,255,0.1) 9px),
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.2) 1px, transparent 2px),
+    radial-gradient(circle at 70% 30%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.2) 1px, transparent 2px),
+    radial-gradient(circle at 30% 70%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.2) 1px, transparent 2px),
+    radial-gradient(circle at 70% 70%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.2) 1px, transparent 2px),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.2) 1px, transparent 2px);
+  background-size: 16px 16px, 16px 16px, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  background-position: center;
+  pointer-events: none;
+}
+
+/* Shimmer animation */
+@keyframes wingShimmer {
+  0% { filter: brightness(1) contrast(1); }
+  50% { filter: brightness(1.1) contrast(1.05); }
+  100% { filter: brightness(1) contrast(1); }
+}
+
+.dos-card.red, .dos-card.yellow, .dos-card.green, .dos-card.blue,
+.dos-card.lavender, .dos-card.skyblue, .dos-card.teal, .dos-card.indigo {
+  animation: wingShimmer 3s infinite ease-in-out;
+  border-width: 1px;
+  border-style: solid;
+}
+
+/* Card text */
+.dos-card > span,
+.dos-card .card-text {
+  position: relative;
+  z-index: 5;
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: 2px 4px;
+  border-radius: 3px;
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+.dos-card * {
+  pointer-events: none;
+}
+
+.card-fairy-gobble-text {
+  font-size: 0.65em;
+  line-height: 1.1em;
+  text-align: center;
+  position: relative;
+  z-index: 5;
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: 2px 4px;
+  border-radius: 3px;
+  backdrop-filter: blur(1px);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+.card-half-text {
+  font-size: 0.55em;
+  line-height: 1.1em;
+  text-align: center;
+  color: #222;
+  text-shadow: none;
+  background-color: rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 5;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+/* Wild card effects */
+.dos-card.wild::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%; right: -50%; bottom: -50%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+  animation: wildGlitter 2.5s infinite linear;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.dos-card.wild::after {
+  content: '';
+  position: absolute;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background-color: white;
+  opacity: 0.7;
+  box-shadow: 0 0 10px 2px gold;
+  animation: wildSparkle 4s infinite ease-in-out;
+  top: 30%; left: 20%;
+  pointer-events: none;
+}
+
+.dos-card.wild .sparkle {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background-color: white;
+  opacity: 0.8;
+  box-shadow: 0 0 8px 1px gold;
+  animation: wildSparkle 3s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes wildGlitter {
+  0% { transform: translate(-50%, -50%) rotate(0deg); opacity: 0.2; }
+  50% { opacity: 0.4; }
+  100% { transform: translate(-50%, -50%) rotate(360deg); opacity: 0.2; }
+}
+
+@keyframes wildSparkle {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.8; box-shadow: 0 0 15px 3px white; }
+}
+
+/* Card states */
+.dos-card.playable {
+  box-shadow: 0 0 15px gold;
+  transform: scale(1.05);
+  animation: cardPulse 1.5s infinite;
+}
+
+.dos-card.just-drawn {
+  box-shadow: 0 0 15px gold;
+  transform: scale(1.05);
+  animation: cardPulse 1.5s infinite;
+}
+
+@keyframes cardPulse {
+  0% { box-shadow: 0 0 15px gold; }
+  50% { box-shadow: 0 0 25px gold; }
+  100% { box-shadow: 0 0 15px gold; }
+}
+
+/* Butterfly decorations */
+.dos-butterfly {
+  position: absolute;
+  width: 10px; height: 10px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.dos-butterfly::before,
+.dos-butterfly::after {
+  content: '';
+  position: absolute;
+  width: 5px; height: 6px;
+  border-radius: 80% 0 55% 50% / 55% 0 80% 50%;
+  top: 0;
+  background-color: currentColor;
+  opacity: 0.8;
+  transform-origin: center right;
+}
+
+.dos-butterfly::before {
+  left: 0;
+  transform: rotateY(-20deg);
+}
+
+.dos-butterfly::after {
+  right: 0;
+  transform: scaleX(-1) rotateY(-20deg);
+}
+
+.dos-butterfly.top-left { top: 12px; left: 10px; }
+.dos-butterfly.top-right { top: 12px; right: 10px; }
+.dos-butterfly.bottom { bottom: 12px; left: 25px; }
+
+.dos-butterfly.red { color: #e53935; }
+.dos-butterfly.yellow { color: #fbc02d; }
+.dos-butterfly.green { color: #43a047; }
+.dos-butterfly.blue { color: #1e88e5; }
+.dos-butterfly.lavender { color: #9c64a6; }
+.dos-butterfly.skyblue { color: #48c9b0; }
+.dos-butterfly.teal { color: #00897b; }
+.dos-butterfly.indigo { color: #1a237e; }
+
+/* Hand layout */
+.dos-hand {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 10px;
+  min-height: 140px;
+}
+
+/* Game board layout */
+.dos-board {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 10px;
+}
+
+.dos-opponent-area {
+  padding: 15px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.2);
+}
+
+.dos-center-area {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  padding: 20px 0;
+}
+
+.dos-pile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.dos-pile-label {
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
+.dos-my-area {
+  padding: 15px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.1);
+  border: 2px solid transparent;
+}
+
+.dos-my-area.my-turn {
+  border-color: gold;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+.dos-status-bar {
+  text-align: center;
+  font-size: 1.1em;
+  padding: 10px;
+  font-weight: bold;
+}
+
+.dos-draw-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  background: #fff;
+  color: #333;
+  transition: all 0.2s;
+}
+
+.dos-draw-btn:hover {
+  transform: scale(1.05);
+}
+
+.dos-draw-btn:disabled {
+  background: #666;
+  color: #999;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.dos-draw-btn.must-draw {
+  animation: pulseDraw 1.5s infinite;
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
+}
+
+@keyframes pulseDraw {
+  0% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.7); }
+  50% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.9); background-color: #ff5252; }
+  100% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.7); }
+}
+
+.dos-pass-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  background: #ffc107;
+  color: #333;
+  margin-left: 10px;
+}
+
+.dos-pass-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Color picker */
+.dos-color-picker {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 20px;
+}
+
+.dos-color-btn {
+  border: 2px solid #fff;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-weight: bold;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dos-color-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px currentColor;
+}
+
+.dos-color-btn.red { background: #e53935; color: #fff; }
+.dos-color-btn.yellow { background: #fbc02d; color: #222; }
+.dos-color-btn.green { background: #43a047; color: #fff; }
+.dos-color-btn.blue { background: #1e88e5; color: #fff; }
+.dos-color-btn.lavender { background: #9c64a6; color: #fff; }
+.dos-color-btn.skyblue { background: #48c9b0; color: #222; }
+.dos-color-btn.teal { background: #00897b; color: #fff; }
+.dos-color-btn.indigo { background: #1a237e; color: #fff; }
+
+/* Animation overlays */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-20px); }
+}
+
+@keyframes colorCycle {
+  0% { color: #e53935; }
+  25% { color: #fbc02d; }
+  50% { color: #43a047; }
+  75% { color: #1e88e5; }
+  100% { color: #e53935; }
+}
+
+@keyframes fall {
+  to { transform: translateY(100vh); }
+}
+
+/* Victory overlay */
+.dos-victory-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow: hidden;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.dos-victory-message {
+  font-size: 5em;
+  font-weight: bold;
+  color: gold;
+  text-shadow: 0 0 10px rgba(255,215,0,0.7);
+  margin-bottom: 20px;
+  animation: bounce 1s infinite alternate;
+}
+
+.dos-victory-player {
+  font-size: 2.5em;
+  color: white;
+  margin-bottom: 40px;
+  animation: colorCycle 3s infinite;
+}
+
+.dos-victory-glitter {
+  position: absolute;
+  border-radius: 50%;
+  animation: fall linear;
+  box-shadow: 0 0 10px gold, 0 0 20px gold;
+}
+
+/* Gift animation overlay */
+.dos-gift-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow: hidden;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.dos-gift-overlay.fade-out {
+  animation: fadeOut 1s ease-in-out forwards;
+}
+
+.dos-gift-message {
+  font-size: 3em;
+  font-weight: bold;
+  color: gold;
+  text-shadow: 0 0 10px gold, 0 0 20px gold;
+  margin-bottom: 20px;
+  animation: cardPulse 1s infinite alternate;
+}
+
+.dos-gift-subtitle {
+  font-size: 1.5em;
+  color: white;
+  text-shadow: 0 0 5px rgba(255,255,255,0.5);
+  animation: colorCycle 4s infinite;
+}
+
+/* Present box */
+.dos-present-wrapper {
+  position: relative;
+  width: 240px; height: 240px;
+  margin: 30px auto;
+  perspective: 600px;
+}
+
+.dos-present-wrapper.shaking {
+  animation: presentShake 0.6s ease-in-out 3;
+}
+
+@keyframes presentShake {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-5deg); }
+  30% { transform: rotate(5deg); }
+  45% { transform: rotate(-4deg); }
+  60% { transform: rotate(4deg); }
+  75% { transform: rotate(-2deg); }
+  90% { transform: rotate(2deg); }
+}
+
+.dos-present-box {
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 240px; height: 180px;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+}
+
+.dos-present-lid {
+  position: absolute;
+  top: 0; left: -10px;
+  width: 260px; height: 55px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  transform-origin: bottom center;
+  transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 2;
+}
+
+.dos-present-lid.open {
+  transform: rotateX(-120deg) translateY(-80px);
+}
+
+.dos-present-card-reveal {
+  position: absolute;
+  bottom: 40px; left: 50%;
+  transform: translateX(-50%) translateY(0) scale(0.5);
+  opacity: 0;
+  transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 1;
+}
+
+.dos-present-card-reveal.revealed {
+  transform: translateX(-50%) translateY(-160px) scale(1);
+  opacity: 1;
+}
+
+.dos-present-star {
+  position: absolute;
+  width: 20px; height: 20px;
+  background: gold;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  animation: starBurst 1s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes starBurst {
+  0% { transform: scale(0) rotate(0deg); opacity: 1; }
+  100% { transform: scale(1.5) rotate(180deg); opacity: 0; }
+}
+
+/* Fairy Gobble overlay */
+.dos-fairy-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.dos-fairy-message {
+  font-size: 3.5em;
+  font-weight: bold;
+  color: #ff69b4;
+  text-shadow: 0 0 10px #ff69b4, 0 0 20px #ff69b4;
+  margin-bottom: 20px;
+  animation: bounce 1s infinite alternate;
+}
+
+.dos-fairy-subtitle {
+  font-size: 1.5em;
+  color: white;
+  text-shadow: 0 0 5px rgba(255,255,255,0.5);
+  margin-bottom: 20px;
+}
+
+.dos-main-fairy {
+  position: absolute;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.9) 40%, rgba(255,105,180,0.8) 60%);
+  filter: blur(1px);
+  box-shadow: 0 0 15px #ff69b4, 0 0 30px #ff69b4, inset 0 0 10px #fff;
+  z-index: 1010;
+  transition: all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dos-main-fairy::before,
+.dos-main-fairy::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 25px; height: 15px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 50% 50% 0 0;
+  transform-origin: center top;
+  z-index: -1;
+  filter: blur(1px);
+  opacity: 0.7;
+  animation: fairyWings 0.3s infinite alternate ease-in-out;
+}
+
+.dos-main-fairy::before {
+  left: -15px;
+  transform: rotate(-20deg);
+}
+
+.dos-main-fairy::after {
+  right: -15px;
+  transform: rotate(20deg);
+}
+
+@keyframes fairyWings {
+  0% { transform: rotate(-20deg) scaleY(0.9); }
+  100% { transform: rotate(-30deg) scaleY(1.1); }
+}
+
+/* Flip overlay */
+.dos-flip-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow: hidden;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.dos-flip-message {
+  font-size: 4em;
+  font-weight: bold;
+  color: gold;
+  text-shadow: 0 0 10px gold, 0 0 20px gold;
+  animation: bounce 1s infinite alternate;
+}
+
+.dos-flip-light {
+  position: absolute;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  filter: blur(5px);
+  animation: fadeOut 1s forwards;
+  pointer-events: none;
+}
+
+/* Half it up overlay */
+.dos-half-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.dos-half-banner {
+  font-size: 4em;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 20px #fff, 0 0 40px gold, 0 0 60px gold;
+  animation: halfBannerIn 0.5s ease-out;
+}
+
+@keyframes halfBannerIn {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Announcement styles */
+.dos-announcement {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 5em;
+  font-weight: bold;
+  color: gold;
+  text-shadow: 0 0 20px gold, 0 0 40px rgba(255,215,0,0.5);
+  z-index: 1100;
+  animation: announcePop 1.5s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes announcePop {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  30% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+  70% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+
+/* Lobby styles */
+.dos-lobby {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.dos-room-code {
+  font-size: 3em;
+  font-weight: bold;
+  letter-spacing: 8px;
+  color: gold;
+  text-shadow: 0 0 10px rgba(255,215,0,0.5);
+  margin: 20px 0;
+}
+
+.dos-share-link {
+  background: rgba(255,255,255,0.1);
+  padding: 12px 20px;
+  border-radius: 8px;
+  word-break: break-all;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dos-share-link:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Player info bar */
+.dos-player-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.dos-card-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  font-size: 0.9em;
+  margin-left: 8px;
+}
+
+/* Disconnect banner */
+.dos-disconnect-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: #ff5252;
+  color: white;
+  text-align: center;
+  padding: 10px;
+  font-weight: bold;
+  z-index: 2000;
+  animation: fadeIn 0.3s;
+}
+
+/* ═══════════════════════════════════════ */
+/* Animation element styles               */
+/* ═══════════════════════════════════════ */
+
+/* ── Shared falling glitter (gift + victory) ── */
+.dos-anim-glitter {
+  position: absolute;
+  top: -20px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: glitterFall linear forwards;
+}
+
+@keyframes glitterFall {
+  0% { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(110vh) rotate(720deg); }
+}
+
+/* ── Gift: Present box ribbons ── */
+.dos-present-ribbon-v {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 100%;
+  opacity: 0.8;
+}
+
+.dos-present-ribbon-h {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 30px;
+  opacity: 0.8;
+}
+
+.dos-present-lid-ribbon {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 100%;
+  opacity: 0.8;
+}
+
+/* ── Gift: Bow ── */
+.dos-present-bow {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  width: 70px;
+  height: 40px;
+  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+}
+
+.dos-present-bow.open {
+  transform: translateX(-50%) translateY(-100px) scale(0.5);
+  opacity: 0;
+}
+
+.dos-bow-loop {
+  position: absolute;
+  top: 5px;
+  width: 30px;
+  height: 25px;
+  border-radius: 50% 50% 0 0;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.dos-bow-loop.left {
+  left: 2px;
+  transform: rotate(-15deg);
+}
+
+.dos-bow-loop.right {
+  right: 2px;
+  transform: rotate(15deg);
+}
+
+/* ── Fairy Gobble: Target card ── */
+.dos-fairy-target-card {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1005;
+}
+
+/* ── Fairy Gobble: Mouth ── */
+.dos-fairy-mouth {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 4px;
+  background: #333;
+  border-radius: 0 0 50% 50%;
+  transition: all 0.2s;
+}
+
+.dos-fairy-mouth.eating {
+  height: 12px;
+  width: 16px;
+  border-radius: 0 0 50% 50%;
+  animation: fairyMunch 0.2s infinite alternate;
+}
+
+@keyframes fairyMunch {
+  0% { height: 8px; width: 14px; }
+  100% { height: 14px; width: 18px; }
+}
+
+/* ── Fairy Gobble: Trail particles ── */
+.dos-fairy-trail {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.9) 30%, rgba(255,105,180,0.6) 70%);
+  box-shadow: 0 0 8px #ff69b4;
+  pointer-events: none;
+  animation: fairyTrailFade 1s ease-out forwards;
+  z-index: 1005;
+}
+
+@keyframes fairyTrailFade {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+/* ── Fairy Gobble: Mini trailing fairies ── */
+.dos-mini-fairy {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.8) 30%, rgba(255,105,180,0.6) 70%);
+  box-shadow: 0 0 10px #ff69b4, 0 0 20px rgba(255,105,180,0.5);
+  pointer-events: none;
+  z-index: 1008;
+}
+
+/* ── Fairy Gobble: Background ambient fairies ── */
+.dos-bg-fairy {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.7) 20%, rgba(255,105,180,0.4) 70%);
+  box-shadow: 0 0 8px rgba(255,105,180,0.5);
+  pointer-events: none;
+  z-index: 1001;
+  opacity: 0.6;
+}
+
+/* ── Flip: Subtitle ── */
+.dos-flip-subtitle {
+  font-size: 1.5em;
+  color: white;
+  text-shadow: 0 0 8px rgba(255,255,255,0.5);
+  margin-top: 15px;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* ── Half It Up: Flying cards ── */
+.dos-half-flying-card {
+  position: absolute;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1201;
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(255, 23, 68, 0.5);
+}
+
+/* ── Half It Up: Card wings ── */
+.dos-half-wing {
+  position: absolute;
+  top: 15%;
+  width: 25px;
+  height: 50px;
+  border-radius: 50% 50% 30% 30%;
+  opacity: 0.85;
+  pointer-events: none;
+  animation: halfWingFlap 0.3s infinite alternate ease-in-out;
+  box-shadow: 0 0 10px rgba(255,215,0,0.5);
+}
+
+.dos-half-wing.left {
+  left: -20px;
+  transform-origin: right center;
+  transform: rotateY(-20deg);
+}
+
+.dos-half-wing.right {
+  right: -20px;
+  transform-origin: left center;
+  transform: rotateY(20deg) scaleX(-1);
+}
+
+@keyframes halfWingFlap {
+  0% { transform: rotateY(-20deg) scaleY(0.85); }
+  100% { transform: rotateY(-40deg) scaleY(1.15); }
+}
+
+/* ── Half It Up: Glitter trail dots ── */
+.dos-half-glitter-dot {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 6px currentColor;
+  animation: halfGlitterPop 0.8s ease-out forwards;
+  z-index: 1200;
+}
+
+@keyframes halfGlitterPop {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+/* ── Victory: Play again / continue button ── */
+.dos-play-again-btn {
+  padding: 16px 48px;
+  font-size: 1.3em;
+  font-weight: bold;
+  border: 2px solid gold;
+  border-radius: 12px;
+  background: rgba(255, 215, 0, 0.2);
+  color: gold;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 1001;
+  text-shadow: 0 0 5px rgba(255,215,0,0.5);
+}
+
+.dos-play-again-btn:hover {
+  background: rgba(255, 215, 0, 0.4);
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(255,215,0,0.5);
+}
