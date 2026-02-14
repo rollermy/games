@@ -5,7 +5,8 @@
   "scripts": {
     "migrate": "sh -c 'node node_modules/.c12/github_corsacca_nuxt_*/scripts/migrate.mjs'",
     "dev": "npm run migrate && nuxt dev",
-    "build": "npm run migrate && nuxt build",
+    "build": "nuxt build",
+    "start": "npm run migrate && node .output/server/index.mjs",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
