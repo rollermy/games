@@ -75,7 +75,7 @@ export type AnimationEvent =
   | { kind: 'giftPlayed'; recipientIndex: 0 | 1; giftCard: Card }
   | { kind: 'fairyGobble'; thiefIndex: 0 | 1; stolenCard: Card }
   | { kind: 'flip'; isNowFlipped: boolean }
-  | { kind: 'halfItUp'; removedCounts: [number, number] }
+  | { kind: 'halfItUp'; removedCards: [Card[], Card[]] }
   | { kind: 'victory'; winnerIndex: 0 | 1; winnerName: string }
   | { kind: 'announcement'; text: string; playerIndex: 0 | 1 }
   | { kind: 'cardsDrawn'; playerIndex: 0 | 1; count: number }

@@ -89,7 +89,7 @@ async function copyLink() {
 // Trigger animation processing when queue changes
 watch(animationQueue, (queue) => {
   if (queue.length > 0 && animRef.value) {
-    animRef.value.processNext()
+    nextTick(() => animRef.value?.processNext())
   }
 })
 </script>
@@ -211,6 +211,7 @@ watch(animationQueue, (queue) => {
       v-if="gameState"
       ref="animRef"
       :player-names="gameState.playerNames"
+      :my-index="gameState.myIndex"
     />
   </div>
 </template>

@@ -363,12 +363,16 @@ export function handlePlayCard(state: DosGameState, playerIndex: 0 | 1, cardInde
     const toRemove0 = indices0.slice(0, count0).sort((a, b) => b - a)
     const toRemove1 = indices1.slice(0, count1).sort((a, b) => b - a)
 
+    // Collect actual removed cards before splicing
+    const removedFrom0: Card[] = toRemove0.map(idx => state.hands[0][idx])
+    const removedFrom1: Card[] = toRemove1.map(idx => state.hands[1][idx])
+
     // Remove cards (from end to preserve indices)
     for (const idx of toRemove0) state.hands[0].splice(idx, 1)
     for (const idx of toRemove1) state.hands[1].splice(idx, 1)
 
     sortHands(state)
-    events.push({ kind: 'halfItUp', removedCounts: [count0, count1] })
+    events.push({ kind: 'halfItUp', removedCards: [removedFrom0, removedFrom1] })
 
     if (card === state.justDrawnCard) {
       state.justDrawnCard = null

@@ -4,13 +4,14 @@ type AnimationEvent =
   | { kind: 'giftPlayed'; recipientIndex: 0 | 1; giftCard: { color: string; value: string } }
   | { kind: 'fairyGobble'; thiefIndex: 0 | 1; stolenCard: { color: string; value: string } }
   | { kind: 'flip'; isNowFlipped: boolean }
-  | { kind: 'halfItUp'; removedCounts: [number, number] }
+  | { kind: 'halfItUp'; removedCards: [{ color: string; value: string }[], { color: string; value: string }[]] }
   | { kind: 'victory'; winnerIndex: 0 | 1; winnerName: string }
   | { kind: 'announcement'; text: string; playerIndex: 0 | 1 }
   | { kind: 'cardsDrawn'; playerIndex: 0 | 1; count: number }
 
 const props = defineProps<{
   playerNames: [string, string]
+  myIndex: 0 | 1
 }>()
 
 const shiftAnimation = inject<() => AnimationEvent | undefined>('shiftAnimation')
@@ -81,6 +82,7 @@ function clearAllTimers() {
 
 function processNext() {
   if (!shiftAnimation) return
+  if (currentAnim.value) return // animation already in progress
   const next = shiftAnimation()
   if (!next) {
     currentAnim.value = null
@@ -93,7 +95,7 @@ function processNext() {
     case 'giftPlayed': playGiftAnimation(); break
     case 'fairyGobble': playFairyGobbleAnimation(); break
     case 'flip': playFlipAnimation(next.isNowFlipped); break
-    case 'halfItUp': playHalfItUpAnimation(next.removedCounts); break
+    case 'halfItUp': playHalfItUpAnimation(next.removedCards); break
     case 'victory': playVictoryAnimation(); break
     case 'announcement': playAnnouncement(next.text, next.playerIndex); scheduleNext(2000); break
     case 'cardsDrawn': scheduleNext(1000); break
@@ -340,23 +342,29 @@ function playFlipAnimation(isNowFlipped: boolean) {
 }
 
 // ─── HALF IT UP ANIMATION ───
-function playHalfItUpAnimation(removedCounts: [number, number]) {
+function playHalfItUpAnimation(removedCards: [{ color: string; value: string }[], { color: string; value: string }[]]) {
   halfBannerVisible.value = true
   halfFlyingCards.value = []
   halfGlitterTrails.value = []
 
-  const totalCards = removedCounts[0] + removedCounts[1]
-  const cardColors = ['red', 'yellow', 'green', 'blue']
-  const cardValues = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Skip', '+2']
+  const opponentIndex = (props.myIndex === 0 ? 1 : 0) as 0 | 1
+
+  // Build a flat list of cards with their start position (opponent = top, mine = bottom)
+  const allCards: { color: string; value: string; startTop: number }[] = []
+  for (const card of removedCards[opponentIndex]) {
+    allCards.push({ color: card.color, value: card.value, startTop: 5 + Math.random() * 20 })
+  }
+  for (const card of removedCards[props.myIndex]) {
+    allCards.push({ color: card.color, value: card.value, startTop: 70 + Math.random() * 20 })
+  }
+
+  const totalCards = allCards.length
 
   // T+800ms: Create flying cards
   later(() => {
     for (let i = 0; i < totalCards; i++) {
-      const isP0 = i < removedCounts[0]
+      const { color, value, startTop } = allCards[i]
       const startLeft = 10 + Math.random() * 80
-      const startTop = isP0 ? 70 + Math.random() * 20 : 5 + Math.random() * 20
-      const color = cardColors[Math.floor(Math.random() * cardColors.length)]
-      const value = cardValues[Math.floor(Math.random() * cardValues.length)]
 
       later(() => {
         const cardId = Date.now() + i
@@ -486,24 +494,8 @@ function playAnnouncement(text: string, playerIndex: 0 | 1) {
   }
 }
 
-// Watch for new animations
-watch(() => shiftAnimation, () => {
-  if (!currentAnim.value) processNext()
-}, { immediate: true })
-
-const checkInterval = setInterval(() => {
-  if (!currentAnim.value && shiftAnimation) {
-    const peek = shiftAnimation()
-    if (peek) {
-      currentAnim.value = peek
-      processNext()
-    }
-  }
-}, 500)
-
 onUnmounted(() => {
   clearAllTimers()
-  clearInterval(checkInterval)
   if (victoryInterval) clearInterval(victoryInterval)
 })
 
@@ -625,6 +617,13 @@ defineExpose({ processNext })
     <div class="dos-flip-message">FLIP CARD PLAYED!</div>
     <p class="dos-flip-subtitle">{{ flipSubtitleText }}</p>
 
+    <!-- Flipping card visual -->
+    <div class="dos-flipping-card">
+      <div class="dos-card" :class="currentAnim.isNowFlipped ? 'red' : 'lavender'">
+        <span>{{ currentAnim.isNowFlipped ? '+2' : '+5' }}</span>
+      </div>
+    </div>
+
     <!-- Flashing lights with glow -->
     <div
       v-for="light in flipLights"
@@ -638,7 +637,7 @@ defineExpose({ processNext })
   <div v-if="currentAnim?.kind === 'halfItUp'" class="dos-half-overlay">
     <div class="dos-half-banner">HALF IT UP!</div>
     <p style="color: white; font-size: 1.3em; margin-top: 15px; position: relative; z-index: 1201;">
-      Removing {{ currentAnim.removedCounts[0] }} + {{ currentAnim.removedCounts[1] }} cards!
+      Removing {{ currentAnim.removedCards[0].length }} + {{ currentAnim.removedCards[1].length }} cards!
     </p>
 
     <!-- Flying cards with wings -->
