@@ -51,6 +51,14 @@ onMounted(async () => {
       role.value = 'host'
       connect(code.value, 'host')
       joined.value = true
+    } else if (data.status === 'playing') {
+      const savedName = sessionStorage.getItem(`dos-guest-${code.value}`)
+      if (savedName) {
+        guestName.value = savedName
+        role.value = 'guest'
+        connect(code.value, 'guest', savedName)
+        joined.value = true
+      }
     }
   } catch (e: any) {
     fetchError.value = e?.data?.statusMessage || 'Room not found'
@@ -64,6 +72,7 @@ function joinAsGuest() {
   role.value = 'guest'
   connect(code.value, 'guest', guestName.value.trim())
   joined.value = true
+  sessionStorage.setItem(`dos-guest-${code.value}`, guestName.value.trim())
 }
 
 const phase = computed(() => {
