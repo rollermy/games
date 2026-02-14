@@ -1,0 +1,93 @@
+@import "tailwindcss" theme(static);
+@import "@nuxt/ui";
+
+/* Force generation of UI CSS variable utilities (needed for Nuxt layers) */
+@source inline("{hover:,}text-(--ui-text)");
+@source inline("{hover:,}text-(--ui-text-muted)");
+@source inline("{hover:,}text-(--ui-text-dimmed)");
+@source inline("{hover:,}text-(--ui-text-toned)");
+@source inline("{hover:,}text-(--ui-text-highlighted)");
+@source inline("{hover:,}text-(--ui-text-inverted)");
+@source inline("bg-(--ui-bg)");
+@source inline("border-(--ui-border)");
+
+
+/* theme static {*/
+/*  !* Primary: Kashmir Blue - base #3f729b *!*/
+/*  --color-kashmir-blue-50: #f0f5fa;*/
+/*  --color-kashmir-blue-100: #e0ebf4;*/
+/*  --color-kashmir-blue-200: #c1d6e9;*/
+/*  --color-kashmir-blue-300: #93b8d8;*/
+/*  --color-kashmir-blue-400: #5e94c3;*/
+/*  --color-kashmir-blue-500: #3f729b;*/
+/*  --color-kashmir-blue-600: #355f82;*/
+/*  --color-kashmir-blue-700: #2c4d6a;*/
+/*  --color-kashmir-blue-800: #264158;*/
+/*  --color-kashmir-blue-900: #1f3548;*/
+/*  --color-kashmir-blue-950: #14222f;*/
+
+/*  !* Secondary: Slate Gray - neutral complement *!*/
+/*  --color-brand-slate-50: #f8fafc;*/
+/*  --color-brand-slate-100: #f1f5f9;*/
+/*  --color-brand-slate-200: #e2e8f0;*/
+/*  --color-brand-slate-300: #cbd5e1;*/
+/*  --color-brand-slate-400: #94a3b8;*/
+/*  --color-brand-slate-500: #64748b;*/
+/*  --color-brand-slate-600: #475569;*/
+/*  --color-brand-slate-700: #334155;*/
+/*  --color-brand-slate-800: #1e293b;*/
+/*  --color-brand-slate-900: #0f172a;*/
+/*  --color-brand-slate-950: #020617;*/
+
+/*  !* Success: Sage Green - harmonious with blue *!*/
+/*  --color-brand-success-50: #f3faf7;*/
+/*  --color-brand-success-100: #d8f0e5;*/
+/*  --color-brand-success-200: #b1e0cb;*/
+/*  --color-brand-success-300: #82c9ac;*/
+/*  --color-brand-success-400: #56ac8a;*/
+/*  --color-brand-success-500: #3d9171;*/
+/*  --color-brand-success-600: #2f745b;*/
+/*  --color-brand-success-700: #295d4b;*/
+/*  --color-brand-success-800: #244b3d;*/
+/*  --color-brand-success-900: #203f34;*/
+/*  --color-brand-success-950: #0e231d;*/
+
+/*  !* Warning: Warm Amber - complementary warmth *!*/
+/*  --color-brand-warning-50: #fefbf3;*/
+/*  --color-brand-warning-100: #fdf3d7;*/
+/*  --color-brand-warning-200: #fae5ae;*/
+/*  --color-brand-warning-300: #f6d07b;*/
+/*  --color-brand-warning-400: #f1b646;*/
+/*  --color-brand-warning-500: #ec9a1f;*/
+/*  --color-brand-warning-600: #d47815;*/
+/*  --color-brand-warning-700: #b05814;*/
+/*  --color-brand-warning-800: #8f4518;*/
+/*  --color-brand-warning-900: #753a17;*/
+/*  --color-brand-warning-950: #431d09;*/
+
+/*  !* Error: Dusty Rose - softer red that pairs with blue *!*/
+/*  --color-brand-error-50: #fef5f5;*/
+/*  --color-brand-error-100: #fee5e5;*/
+/*  --color-brand-error-200: #fccfcf;*/
+/*  --color-brand-error-300: #f9a8a8;*/
+/*  --color-brand-error-400: #f37272;*/
+/*  --color-brand-error-500: #e84545;*/
+/*  --color-brand-error-600: #d42a2a;*/
+/*  --color-brand-error-700: #b22020;*/
+/*  --color-brand-error-800: #931f1f;*/
+/*  --color-brand-error-900: #7a2020;*/
+/*  --color-brand-error-950: #420c0c;*/
+
+/*  !* Info: Steel Cyan - analogous to primary *!*/
+/*  --color-brand-info-50: #f2f9fb;*/
+/*  --color-brand-info-100: #e4f2f6;*/
+/*  --color-brand-info-200: #c4e4ec;*/
+/*  --color-brand-info-300: #98cfdd;*/
+/*  --color-brand-info-400: #5fb3c8;*/
+/*  --color-brand-info-500: #4097ad;*/
+/*  --color-brand-info-600: #387b92;*/
+/*  --color-brand-info-700: #326477;*/
+/*  --color-brand-info-800: #305363;*/
+/*  --color-brand-info-900: #2b4654;*/
+/*  --color-brand-info-950: #192d38;*/
+/*}*/

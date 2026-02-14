@@ -16,7 +16,7 @@ class BaseMigration {
 }
 
 export default class CreateGameRooms extends BaseMigration {
-  id = 1
+  id = 4
   name = 'Create game_rooms table'
 
   async up(sql) {
