@@ -44,6 +44,7 @@ const flipSubtitleText = ref('')
 
 // Half it up state
 const halfBannerVisible = ref(false)
+const halfDoomedCards = ref<{ id: number; style: Record<string, string>; color: string; value: string }[]>([])
 const halfFlyingCards = ref<{ id: number; style: Record<string, string>; color: string; value: string; wingColor: string }[]>([])
 const halfGlitterTrails = ref<{ id: number; left: string; top: string; size: number; color: string }[]>([])
 
@@ -344,27 +345,53 @@ function playFlipAnimation(isNowFlipped: boolean) {
 // ─── HALF IT UP ANIMATION ───
 function playHalfItUpAnimation(removedCards: [{ color: string; value: string }[], { color: string; value: string }[]]) {
   halfBannerVisible.value = true
+  halfDoomedCards.value = []
   halfFlyingCards.value = []
   halfGlitterTrails.value = []
 
   const opponentIndex = (props.myIndex === 0 ? 1 : 0) as 0 | 1
 
-  // Build a flat list of cards with their start position (opponent = top, mine = bottom)
-  const allCards: { color: string; value: string; startTop: number }[] = []
-  for (const card of removedCards[opponentIndex]) {
-    allCards.push({ color: card.color, value: card.value, startTop: 5 + Math.random() * 20 })
-  }
-  for (const card of removedCards[props.myIndex]) {
-    allCards.push({ color: card.color, value: card.value, startTop: 70 + Math.random() * 20 })
+  // Position cards like a hand — spread evenly across the area
+  function spreadCards(cards: { color: string; value: string }[], topBase: number) {
+    const count = cards.length
+    if (count === 0) return []
+    const totalWidth = Math.min(count * 8, 70)
+    const startX = 50 - totalWidth / 2
+    const step = count > 1 ? totalWidth / (count - 1) : 0
+    return cards.map((card, i) => ({
+      color: card.color,
+      value: card.value,
+      startLeft: count === 1 ? 50 : startX + step * i,
+      startTop: topBase
+    }))
   }
 
+  const opponentCards = spreadCards(removedCards[opponentIndex], 10)
+  const myCards = spreadCards(removedCards[props.myIndex], 80)
+  const allCards = [...opponentCards, ...myCards]
   const totalCards = allCards.length
 
-  // T+800ms: Create flying cards
+  // T+800ms: Show doomed cards with red pulsing glow (like the original)
   later(() => {
+    halfDoomedCards.value = allCards.map((card, i) => ({
+      id: i,
+      style: {
+        left: card.startLeft + '%',
+        top: card.startTop + '%',
+        width: '60px',
+        height: '90px'
+      },
+      color: card.color,
+      value: card.value
+    }))
+  }, 800)
+
+  // T+2200ms: Clone doomed cards into flying cards and start staggered flight
+  later(() => {
+    halfDoomedCards.value = []
+
     for (let i = 0; i < totalCards; i++) {
-      const { color, value, startTop } = allCards[i]
-      const startLeft = 10 + Math.random() * 80
+      const { color, value, startLeft, startTop } = allCards[i]
 
       later(() => {
         const cardId = Date.now() + i
@@ -376,45 +403,39 @@ function playHalfItUpAnimation(removedCards: [{ color: string; value: string }[]
             width: '60px',
             height: '90px',
             opacity: '1',
-            transform: 'scale(1) rotate(0deg)'
+            transform: 'scale(1) rotate(0deg)',
+            boxShadow: '0 0 15px #ff1744, 0 0 30px #ff1744'
           },
           color,
           value,
           wingColor: 'gold'
         }]
 
-        // Add red glow initially
+        // Start flight to discard pile center
         later(() => {
-          halfFlyingCards.value = halfFlyingCards.value.map(c =>
-            c.id === cardId ? {
-              ...c,
-              style: { ...c.style, boxShadow: '0 0 15px #ff1744, 0 0 30px #ff1744' }
-            } : c
-          )
-        }, 50)
-
-        // Start flight to center after glow
-        later(() => {
-          // Spawn glitter trail
+          // Spawn glitter trail — 3 particles per tick like the original
           let glitterCount = 0
           const glitterInterval = setInterval(() => {
-            if (glitterCount++ > 8) { clearInterval(glitterInterval); return }
-            const dotColor = TRAIL_COLORS[Math.floor(Math.random() * TRAIL_COLORS.length)]
-            const dot = {
-              id: Date.now() + i * 100 + glitterCount,
-              left: (startLeft + (50 - startLeft) * (glitterCount / 8)) + '%',
-              top: (startTop + (50 - startTop) * (glitterCount / 8)) + '%',
-              size: Math.random() * 7 + 4,
-              color: dotColor
+            if (glitterCount++ > 12) { clearInterval(glitterInterval); return }
+            for (let g = 0; g < 3; g++) {
+              const dotColor = TRAIL_COLORS[Math.floor(Math.random() * TRAIL_COLORS.length)]
+              const progress = glitterCount / 12
+              const dot = {
+                id: Date.now() + i * 1000 + glitterCount * 10 + g,
+                left: (startLeft + (50 - startLeft) * progress + (Math.random() - 0.5) * 5) + '%',
+                top: (startTop + (45 - startTop) * progress + (Math.random() - 0.5) * 4) + '%',
+                size: Math.random() * 7 + 4,
+                color: dotColor
+              }
+              halfGlitterTrails.value = [...halfGlitterTrails.value, dot]
+              later(() => {
+                halfGlitterTrails.value = halfGlitterTrails.value.filter(d => d.id !== dot.id)
+              }, 800)
             }
-            halfGlitterTrails.value = [...halfGlitterTrails.value, dot]
-            later(() => {
-              halfGlitterTrails.value = halfGlitterTrails.value.filter(d => d.id !== dot.id)
-            }, 800)
           }, 50)
           allTimeouts.push(glitterInterval as unknown as ReturnType<typeof setTimeout>)
 
-          // Fly to center
+          // Fly to discard pile center
           halfFlyingCards.value = halfFlyingCards.value.map(c =>
             c.id === cardId ? {
               ...c,
@@ -422,24 +443,24 @@ function playHalfItUpAnimation(removedCards: [{ color: string; value: string }[]
                 ...c.style,
                 left: '48%',
                 top: '45%',
-                opacity: '0.3',
-                transform: `scale(0.4) rotate(${Math.random() * 360}deg)`,
+                opacity: '0.5',
+                transform: `scale(0.4) rotate(${Math.random() * 360 - 180}deg)`,
                 transition: 'all 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
               }
             } : c
           )
-        }, 400)
+        }, 100)
 
         // Remove card after flight
         later(() => {
           halfFlyingCards.value = halfFlyingCards.value.filter(c => c.id !== cardId)
-        }, 2400)
+        }, 2000)
       }, i * 180)
     }
-  }, 800)
+  }, 2200)
 
-  const totalDuration = 800 + totalCards * 180 + 2800
-  scheduleNext(Math.max(totalDuration, 3500))
+  const totalDuration = 2200 + totalCards * 180 + 2200
+  scheduleNext(Math.max(totalDuration, 4000))
 }
 
 // ─── VICTORY ANIMATION ───
@@ -639,6 +660,17 @@ defineExpose({ processNext })
     <p style="color: white; font-size: 1.3em; margin-top: 15px; position: relative; z-index: 1201;">
       Removing {{ currentAnim.removedCards[0].length }} + {{ currentAnim.removedCards[1].length }} cards!
     </p>
+
+    <!-- Doomed cards (glow phase — shown in place before flight) -->
+    <div
+      v-for="card in halfDoomedCards"
+      :key="'doomed-' + card.id"
+      class="dos-half-flying-card half-doomed"
+      :class="'dos-card ' + card.color"
+      :style="card.style"
+    >
+      <span class="card-text" style="font-size: 0.8em;">{{ card.value }}</span>
+    </div>
 
     <!-- Flying cards with wings -->
     <div

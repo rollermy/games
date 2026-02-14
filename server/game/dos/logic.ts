@@ -178,12 +178,12 @@ export function createInitialState(roomCode: string, hostName: string, guestName
     hands[1].push(deck.pop()!)
   }
 
-  // First discard card must not be wild or white
+  // First discard card must be a plain number card (no wilds, specials, or action cards)
   let firstCard: Card
   do {
     firstCard = deck.pop()!
     deck.unshift(firstCard)
-  } while (firstCard.color === 'wild' || firstCard.color === 'white')
+  } while (firstCard.color === 'wild' || firstCard.color === 'white' || isNaN(parseInt(firstCard.value)))
   const discardPile = [deck.pop()!]
 
   const state: DosGameState = {
