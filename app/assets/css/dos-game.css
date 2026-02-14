@@ -1192,3 +1192,55 @@
   transform: scale(1.1);
   box-shadow: 0 0 20px rgba(255,215,0,0.5);
 }
+
+/* ═══════════════════════════════════════ */
+/* Mobile breakpoint                      */
+/* ═══════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Cards */
+  .dos-card { width: 56px; height: 84px; font-size: 1em; border-radius: 6px; }
+  .dos-hand { gap: 4px; padding: 6px; min-height: 100px; }
+
+  /* Board layout */
+  .dos-board { padding: 6px; }
+  .dos-opponent-area { padding: 8px; }
+  .dos-center-area { gap: 16px; padding: 12px 0; }
+  .dos-my-area { padding: 8px; }
+  .dos-player-info { padding: 4px 8px; font-size: 0.85em; }
+
+  /* Buttons */
+  .dos-draw-btn { padding: 10px 16px; font-size: 0.9em; }
+  .dos-pass-btn { padding: 8px 14px; font-size: 0.9em; margin-left: 6px; }
+
+  /* Color picker */
+  .dos-color-picker { gap: 8px; padding: 12px; }
+  .dos-color-btn { padding: 10px 14px; font-size: 0.9em; }
+
+  /* Status bar */
+  .dos-status-bar { font-size: 0.9em; padding: 6px; }
+
+  /* Animation overlay text */
+  .dos-victory-message { font-size: 2.5em; }
+  .dos-victory-player { font-size: 1.5em; }
+  .dos-gift-message { font-size: 2em; }
+  .dos-fairy-message { font-size: 2em; }
+  .dos-flip-message { font-size: 2.5em; }
+  .dos-half-banner { font-size: 2.5em; }
+  .dos-announcement { font-size: 2.5em; }
+  .dos-gift-subtitle, .dos-fairy-subtitle, .dos-flip-subtitle { font-size: 1.1em; }
+
+  /* Present box */
+  .dos-present-wrapper { width: 160px; height: 160px; margin: 15px auto; }
+  .dos-present-box { width: 160px; height: 120px; }
+  .dos-present-lid { width: 180px; height: 40px; left: -10px; }
+
+  /* Flipping card */
+  .dos-flipping-card { width: 80px; height: 120px; }
+
+  /* Lobby */
+  .dos-room-code { font-size: 2em; letter-spacing: 4px; }
+  .dos-lobby { padding: 20px 16px; }
+
+  /* Play again button */
+  .dos-play-again-btn { padding: 12px 32px; font-size: 1.1em; }
+}
