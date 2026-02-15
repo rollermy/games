@@ -348,7 +348,7 @@ export function handlePlayCard(state: DosGameState, playerIndex: 0 | 1, cardInde
     if (state.hands[opponentIndex].length > 0) {
       const randomIdx = Math.floor(Math.random() * state.hands[opponentIndex].length)
       const stolenCard = state.hands[opponentIndex].splice(randomIdx, 1)[0]
-      events.push({ kind: 'fairyGobble', thiefIndex: playerIndex, stolenCard })
+      events.push({ kind: 'fairyGobble', thiefIndex: playerIndex, stolenCard, stolenCardIndex: randomIdx })
     }
     nextPlayer(state)
   }

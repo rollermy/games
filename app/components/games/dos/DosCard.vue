@@ -4,6 +4,8 @@ const props = defineProps<{
   playable?: boolean
   justDrawn?: boolean
   faceDown?: boolean
+  doomed?: boolean
+  hidden?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -22,8 +24,9 @@ const hasButterflies = computed(() => !isWild.value && !isWhite.value && props.c
     class="dos-card"
     :class="[
       faceDown ? 'face-down' : card.color,
-      { playable: playable && !faceDown, 'just-drawn': justDrawn && !faceDown }
+      { playable: playable && !faceDown, 'just-drawn': justDrawn && !faceDown, 'half-doomed': doomed }
     ]"
+    :style="hidden ? { visibility: 'hidden' } : undefined"
     @click="!faceDown && emit('click')"
   >
     <template v-if="!faceDown">

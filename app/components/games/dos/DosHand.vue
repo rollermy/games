@@ -10,6 +10,8 @@ const props = defineProps<{
   isMyTurn: boolean
   playableIndices?: number[]
   justDrawnIndex?: number | null
+  doomedIndices?: number[]
+  hiddenIndices?: number[]
 }>()
 
 const emit = defineEmits<{
@@ -26,6 +28,8 @@ const emit = defineEmits<{
         :card="card"
         :playable="isMyTurn && (playableIndices?.includes(idx) ?? false)"
         :just-drawn="justDrawnIndex === idx"
+        :doomed="doomedIndices?.includes(idx) ?? false"
+        :hidden="hiddenIndices?.includes(idx) ?? false"
         @click="emit('playCard', idx)"
       />
     </template>
@@ -36,6 +40,8 @@ const emit = defineEmits<{
           :key="i"
           :card="{ color: '', value: '' }"
           :face-down="true"
+          :doomed="doomedIndices?.includes(i - 1) ?? false"
+          :hidden="hiddenIndices?.includes(i - 1) ?? false"
         />
         <span class="text-lg font-bold opacity-70">+{{ cards.length - 7 }}</span>
       </div>
@@ -45,6 +51,8 @@ const emit = defineEmits<{
           :key="i"
           :card="{ color: '', value: '' }"
           :face-down="true"
+          :doomed="doomedIndices?.includes(i - 1) ?? false"
+          :hidden="hiddenIndices?.includes(i - 1) ?? false"
         />
       </template>
     </template>

@@ -3,9 +3,9 @@ import type { ClientGameState } from '../../server/game/dos/types'
 type AnimationEvent =
   | { kind: 'cardPlayed'; card: { color: string; value: string } }
   | { kind: 'giftPlayed'; recipientIndex: 0 | 1; giftCard: { color: string; value: string } }
-  | { kind: 'fairyGobble'; thiefIndex: 0 | 1; stolenCard: { color: string; value: string } }
+  | { kind: 'fairyGobble'; thiefIndex: 0 | 1; stolenCard: { color: string; value: string }; stolenCardIndex: number }
   | { kind: 'flip'; isNowFlipped: boolean }
-  | { kind: 'halfItUp'; removedCounts: [number, number] }
+  | { kind: 'halfItUp'; removedCards: [{ color: string; value: string }[], { color: string; value: string }[]] }
   | { kind: 'victory'; winnerIndex: 0 | 1; winnerName: string }
   | { kind: 'announcement'; text: string; playerIndex: 0 | 1 }
   | { kind: 'cardsDrawn'; playerIndex: 0 | 1; count: number }
@@ -31,6 +31,10 @@ export function useGameSocket() {
   const opponentDisconnected = ref(false)
   const gameOver = ref<{ winner: 0 | 1; winnerName: string } | null>(null)
   const guestJoined = ref<string | null>(null)
+
+  // Defer state updates while a half-it-up animation is pending/playing
+  let deferredState: ClientGameState | null = null
+  let deferringState = false
 
   let ws: WebSocket | null = null
   let deliberateClose = false
@@ -61,7 +65,11 @@ export function useGameSocket() {
 
       switch (msg.type) {
         case 'state':
-          gameState.value = msg.state
+          if (deferringState) {
+            deferredState = msg.state
+          } else {
+            gameState.value = msg.state
+          }
           if (!gameStarted.value) gameStarted.value = true
           break
         case 'error':
@@ -77,6 +85,10 @@ export function useGameSocket() {
           gameStarted.value = true
           break
         case 'animation':
+          if (msg.event.kind === 'halfItUp' || msg.event.kind === 'fairyGobble') {
+            deferringState = true
+            deferredState = null
+          }
           animationQueue.value = [...animationQueue.value, msg.event]
           break
         case 'opponentDisconnected':
@@ -146,6 +158,14 @@ export function useGameSocket() {
     return first
   }
 
+  function flushDeferredState() {
+    deferringState = false
+    if (deferredState) {
+      gameState.value = deferredState
+      deferredState = null
+    }
+  }
+
   onUnmounted(() => {
     disconnect()
   })
@@ -166,6 +186,7 @@ export function useGameSocket() {
     pass,
     chooseColor,
     disconnect,
-    shiftAnimation
+    shiftAnimation,
+    flushDeferredState
   }
 }

@@ -34,6 +34,11 @@ const emit = defineEmits<{
   chooseColor: [color: string]
 }>()
 
+const doomedMyIndices = inject<Ref<number[]>>('doomedMyIndices', ref([]))
+const hiddenMyIndices = inject<Ref<number[]>>('hiddenMyIndices', ref([]))
+const doomedOpponentIndices = inject<Ref<number[]>>('doomedOpponentIndices', ref([]))
+const hiddenOpponentIndices = inject<Ref<number[]>>('hiddenOpponentIndices', ref([]))
+
 const isMyTurn = computed(() => props.state.currentPlayer === props.state.myIndex)
 const opponentIndex = computed(() => (props.state.myIndex === 0 ? 1 : 0) as 0 | 1)
 
@@ -161,6 +166,8 @@ function needsDarkText(color: string): boolean {
         :cards="Array(state.opponentCardCount).fill({ color: '', value: '' })"
         :is-my-hand="false"
         :is-my-turn="false"
+        :doomed-indices="doomedOpponentIndices"
+        :hidden-indices="hiddenOpponentIndices"
       />
     </div>
 
@@ -230,6 +237,8 @@ function needsDarkText(color: string): boolean {
         :is-my-turn="isMyTurn"
         :playable-indices="playableIndices"
         :just-drawn-index="justDrawnIndex"
+        :doomed-indices="doomedMyIndices"
+        :hidden-indices="hiddenMyIndices"
         @play-card="emit('playCard', $event)"
       />
     </div>

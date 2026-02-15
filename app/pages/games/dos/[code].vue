@@ -25,7 +25,8 @@ const {
   draw,
   pass,
   chooseColor,
-  shiftAnimation
+  shiftAnimation,
+  flushDeferredState
 } = useGameSocket()
 
 // Determine role from URL query or auth state
@@ -37,8 +38,19 @@ const loadingRoom = ref(true)
 const fetchError = ref<string | null>(null)
 const animRef = ref<InstanceType<typeof import('~/components/games/dos/DosAnimations.vue').default> | null>(null)
 
-// Provide shiftAnimation to animation component
+// Provide shiftAnimation and flushDeferredState to animation component
 provide('shiftAnimation', shiftAnimation)
+provide('flushDeferredState', flushDeferredState)
+
+// Doomed cards: indices that should glow red before half-it-up flight
+const doomedMyIndices = ref<number[]>([])
+const hiddenMyIndices = ref<number[]>([])
+const doomedOpponentIndices = ref<number[]>([])
+const hiddenOpponentIndices = ref<number[]>([])
+provide('doomedMyIndices', doomedMyIndices)
+provide('hiddenMyIndices', hiddenMyIndices)
+provide('doomedOpponentIndices', doomedOpponentIndices)
+provide('hiddenOpponentIndices', hiddenOpponentIndices)
 
 // Fetch room info first
 onMounted(async () => {
@@ -221,6 +233,7 @@ watch(animationQueue, (queue) => {
       ref="animRef"
       :player-names="gameState.playerNames"
       :my-index="gameState.myIndex"
+      :my-hand="gameState.myHand"
     />
   </div>
 </template>

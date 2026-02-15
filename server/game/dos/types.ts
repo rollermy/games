@@ -73,7 +73,7 @@ export type ServerMessage =
 export type AnimationEvent =
   | { kind: 'cardPlayed'; card: Card }
   | { kind: 'giftPlayed'; recipientIndex: 0 | 1; giftCard: Card }
-  | { kind: 'fairyGobble'; thiefIndex: 0 | 1; stolenCard: Card }
+  | { kind: 'fairyGobble'; thiefIndex: 0 | 1; stolenCard: Card; stolenCardIndex: number }
   | { kind: 'flip'; isNowFlipped: boolean }
   | { kind: 'halfItUp'; removedCards: [Card[], Card[]] }
   | { kind: 'victory'; winnerIndex: 0 | 1; winnerName: string }
