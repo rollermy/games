@@ -2,6 +2,7 @@
   "name": "nuxt-base-template",
   "private": true,
   "type": "module",
+  "version": "0.1",
   "scripts": {
     "migrate": "node scripts/migrate.mjs",
     "dev": "npm run migrate && nuxt dev",
