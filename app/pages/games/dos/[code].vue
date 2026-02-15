@@ -17,21 +17,23 @@ const {
   error,
   roomInfo,
   gameStarted,
-  opponentDisconnected,
+  disconnectedPlayers,
   gameOver,
-  guestJoined,
+  lobbyPlayers,
   connect,
   playCard,
   draw,
   pass,
   chooseColor,
+  chooseTarget,
+  startGame,
   shiftAnimation,
   flushDeferredState
 } = useGameSocket()
 
 // Determine role from URL query or auth state
 const role = ref<'host' | 'guest' | null>(null)
-const guestName = ref('')
+const guestName = ref(typeof localStorage !== 'undefined' ? localStorage.getItem('dos-player-name') || '' : '')
 const joined = ref(false)
 const roomData = ref<{ hostName: string; hostUserId: string; status: string } | null>(null)
 const loadingRoom = ref(true)
@@ -43,14 +45,15 @@ provide('shiftAnimation', shiftAnimation)
 provide('flushDeferredState', flushDeferredState)
 
 // Doomed cards: indices that should glow red before half-it-up flight
+// Per-opponent maps keyed by player index
 const doomedMyIndices = ref<number[]>([])
 const hiddenMyIndices = ref<number[]>([])
-const doomedOpponentIndices = ref<number[]>([])
-const hiddenOpponentIndices = ref<number[]>([])
+const doomedOpponentMap = ref<Record<number, number[]>>({})
+const hiddenOpponentMap = ref<Record<number, number[]>>({})
 provide('doomedMyIndices', doomedMyIndices)
 provide('hiddenMyIndices', hiddenMyIndices)
-provide('doomedOpponentIndices', doomedOpponentIndices)
-provide('hiddenOpponentIndices', hiddenOpponentIndices)
+provide('doomedOpponentMap', doomedOpponentMap)
+provide('hiddenOpponentMap', hiddenOpponentMap)
 
 // Fetch room info first
 onMounted(async () => {
@@ -85,6 +88,7 @@ function joinAsGuest() {
   connect(code.value, 'guest', guestName.value.trim())
   joined.value = true
   sessionStorage.setItem(`dos-guest-${code.value}`, guestName.value.trim())
+  localStorage.setItem('dos-player-name', guestName.value.trim())
 }
 
 const phase = computed(() => {
@@ -107,6 +111,14 @@ async function copyLink() {
   } catch {}
 }
 
+// Disconnected player names for banner
+const disconnectedNames = computed(() => {
+  if (!gameState.value) return []
+  return [...disconnectedPlayers.value]
+    .map(i => gameState.value!.playerNames[i])
+    .filter(Boolean)
+})
+
 // Trigger animation processing when queue changes
 watch(animationQueue, (queue) => {
   if (queue.length > 0 && animRef.value) {
@@ -118,8 +130,8 @@ watch(animationQueue, (queue) => {
 <template>
   <div class="dos-game min-h-screen text-white" style="background-color: #48aaff;">
     <!-- Disconnect banner -->
-    <div v-if="opponentDisconnected" class="dos-disconnect-banner">
-      Opponent disconnected — waiting for reconnection...
+    <div v-if="disconnectedNames.length > 0" class="dos-disconnect-banner">
+      {{ disconnectedNames.join(', ') }} disconnected — waiting for reconnection...
     </div>
 
     <!-- Error state -->
@@ -150,23 +162,33 @@ watch(animationQueue, (queue) => {
         <h2 class="text-2xl font-bold mb-4">DOS Game Room</h2>
         <div class="dos-room-code">{{ code }}</div>
 
-        <p class="mb-4 opacity-80">Share this link with your opponent:</p>
+        <p class="mb-4 opacity-80">Share this link with your opponents:</p>
         <div class="dos-share-link" @click="copyLink">
           {{ shareUrl }}
           <span v-if="copied" class="ml-2 text-green-400">Copied!</span>
         </div>
 
         <div class="mt-8">
-          <template v-if="guestJoined">
-            <p class="text-xl font-bold text-green-400">{{ guestJoined }} joined!</p>
-            <p class="opacity-70">Starting game...</p>
-          </template>
-          <template v-else>
-            <p class="opacity-70">Waiting for opponent to join...</p>
-            <div class="mt-4">
-              <USkeleton class="w-8 h-8 mx-auto rounded-full" />
+          <div v-if="lobbyPlayers.length > 0" class="mb-6">
+            <p class="text-lg font-bold mb-3">Players ({{ lobbyPlayers.length }}/6):</p>
+            <div class="dos-lobby-players">
+              <div v-for="player in lobbyPlayers" :key="player.index" class="dos-lobby-player">
+                <span v-if="player.index === 0" class="dos-lobby-host-badge">Host</span>
+                {{ player.name }}
+              </div>
             </div>
-          </template>
+          </div>
+
+          <UButton
+            size="lg"
+            :disabled="lobbyPlayers.length < 2"
+            @click="startGame"
+          >
+            Start Game ({{ lobbyPlayers.length }} players)
+          </UButton>
+          <p v-if="lobbyPlayers.length < 2" class="mt-2 opacity-70">
+            Waiting for at least 1 more player...
+          </p>
         </div>
       </template>
 
@@ -201,6 +223,17 @@ watch(animationQueue, (queue) => {
       <template v-else>
         <h2 class="text-2xl font-bold mb-4">DOS Game Room</h2>
         <div class="dos-room-code">{{ code }}</div>
+
+        <div v-if="lobbyPlayers.length > 0" class="mb-6">
+          <p class="text-lg font-bold mb-3">Players ({{ lobbyPlayers.length }}/6):</p>
+          <div class="dos-lobby-players">
+            <div v-for="player in lobbyPlayers" :key="player.index" class="dos-lobby-player">
+              <span v-if="player.index === 0" class="dos-lobby-host-badge">Host</span>
+              {{ player.name }}
+            </div>
+          </div>
+        </div>
+
         <p class="opacity-70">Waiting for host to start...</p>
       </template>
     </div>
@@ -213,6 +246,7 @@ watch(animationQueue, (queue) => {
         @draw="draw"
         @pass="pass"
         @choose-color="chooseColor"
+        @choose-target="chooseTarget"
       />
     </template>
 
@@ -234,6 +268,7 @@ watch(animationQueue, (queue) => {
       :player-names="gameState.playerNames"
       :my-index="gameState.myIndex"
       :my-hand="gameState.myHand"
+      :opponents="gameState.opponents"
     />
   </div>
 </template>

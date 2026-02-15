@@ -920,6 +920,100 @@
   background: rgba(255,255,255,0.2);
 }
 
+/* Opponents row */
+.dos-opponents-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.dos-opponents-row .dos-opponent-area {
+  flex: 1;
+  min-width: 150px;
+}
+
+.dos-opponents-row:has(.dos-opponent-area:nth-child(3)) .dos-opponent-area {
+  max-width: 300px;
+}
+
+.dos-opponent-area.is-current-turn {
+  border: 2px solid gold;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.dos-opponent-area.is-disconnected {
+  opacity: 0.5;
+}
+
+.dos-disconnected-badge {
+  display: inline-block;
+  background: #ff5252;
+  color: white;
+  font-size: 0.7em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* Target chooser */
+.dos-target-chooser {
+  padding: 20px;
+  text-align: center;
+}
+
+.dos-target-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dos-target-btn {
+  border: 2px solid gold;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 1.1em;
+  font-weight: bold;
+  cursor: pointer;
+  background: rgba(255, 215, 0, 0.2);
+  color: white;
+  transition: all 0.2s;
+}
+
+.dos-target-btn:hover {
+  background: rgba(255, 215, 0, 0.4);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+/* Lobby player list */
+.dos-lobby-players {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.dos-lobby-player {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.dos-lobby-host-badge {
+  display: inline-block;
+  background: gold;
+  color: #333;
+  font-size: 0.75em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+}
+
 /* Player info bar */
 .dos-player-info {
   display: flex;
@@ -1276,4 +1370,11 @@
 
   /* Play again button */
   .dos-play-again-btn { padding: 12px 32px; font-size: 1.1em; }
+
+  /* Opponents row */
+  .dos-opponents-row { gap: 6px; }
+  .dos-opponents-row .dos-opponent-area { min-width: 120px; padding: 6px; }
+
+  /* Target chooser */
+  .dos-target-btn { padding: 8px 16px; font-size: 0.9em; }
 }

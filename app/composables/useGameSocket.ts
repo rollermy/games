@@ -2,24 +2,24 @@ import type { ClientGameState } from '../../server/game/dos/types'
 
 type AnimationEvent =
   | { kind: 'cardPlayed'; card: { color: string; value: string } }
-  | { kind: 'giftPlayed'; recipientIndex: 0 | 1; giftCard: { color: string; value: string } }
-  | { kind: 'fairyGobble'; thiefIndex: 0 | 1; stolenCard: { color: string; value: string }; stolenCardIndex: number }
+  | { kind: 'giftPlayed'; recipientIndex: number; giftCard: { color: string; value: string } }
+  | { kind: 'fairyGobble'; thiefIndex: number; victimIndex: number; stolenCard: { color: string; value: string }; stolenCardIndex: number }
   | { kind: 'flip'; isNowFlipped: boolean }
-  | { kind: 'halfItUp'; removedCards: [{ color: string; value: string }[], { color: string; value: string }[]] }
-  | { kind: 'victory'; winnerIndex: 0 | 1; winnerName: string }
-  | { kind: 'announcement'; text: string; playerIndex: 0 | 1 }
-  | { kind: 'cardsDrawn'; playerIndex: 0 | 1; count: number }
+  | { kind: 'halfItUp'; removedCards: { color: string; value: string }[][] }
+  | { kind: 'victory'; winnerIndex: number; winnerName: string }
+  | { kind: 'announcement'; text: string; playerIndex: number }
+  | { kind: 'cardsDrawn'; playerIndex: number; count: number }
 
 type ServerMessage =
   | { type: 'state'; state: ClientGameState }
   | { type: 'error'; message: string }
   | { type: 'roomInfo'; code: string; hostName: string; status: string }
-  | { type: 'playerJoined'; guestName: string }
+  | { type: 'lobbyUpdate'; players: { index: number; name: string }[] }
   | { type: 'gameStarted' }
   | { type: 'animation'; event: AnimationEvent }
-  | { type: 'opponentDisconnected' }
-  | { type: 'opponentReconnected' }
-  | { type: 'gameOver'; winner: 0 | 1; winnerName: string }
+  | { type: 'playerDisconnected'; playerIndex: number; playerName: string }
+  | { type: 'playerReconnected'; playerIndex: number; playerName: string }
+  | { type: 'gameOver'; winner: number; winnerName: string }
 
 export function useGameSocket() {
   const gameState = ref<ClientGameState | null>(null)
@@ -28,9 +28,9 @@ export function useGameSocket() {
   const error = ref<string | null>(null)
   const roomInfo = ref<{ code: string; hostName: string; status: string } | null>(null)
   const gameStarted = ref(false)
-  const opponentDisconnected = ref(false)
-  const gameOver = ref<{ winner: 0 | 1; winnerName: string } | null>(null)
-  const guestJoined = ref<string | null>(null)
+  const disconnectedPlayers = ref<Set<number>>(new Set())
+  const gameOver = ref<{ winner: number; winnerName: string } | null>(null)
+  const lobbyPlayers = ref<{ index: number; name: string }[]>([])
 
   // Defer state updates while a half-it-up animation is pending/playing
   let deferredState: ClientGameState | null = null
@@ -78,8 +78,8 @@ export function useGameSocket() {
         case 'roomInfo':
           roomInfo.value = { code: msg.code, hostName: msg.hostName, status: msg.status }
           break
-        case 'playerJoined':
-          guestJoined.value = msg.guestName
+        case 'lobbyUpdate':
+          lobbyPlayers.value = msg.players
           break
         case 'gameStarted':
           gameStarted.value = true
@@ -91,11 +91,11 @@ export function useGameSocket() {
           }
           animationQueue.value = [...animationQueue.value, msg.event]
           break
-        case 'opponentDisconnected':
-          opponentDisconnected.value = true
+        case 'playerDisconnected':
+          disconnectedPlayers.value = new Set([...disconnectedPlayers.value, msg.playerIndex])
           break
-        case 'opponentReconnected':
-          opponentDisconnected.value = false
+        case 'playerReconnected':
+          disconnectedPlayers.value = new Set([...disconnectedPlayers.value].filter(i => i !== msg.playerIndex))
           break
         case 'gameOver':
           gameOver.value = { winner: msg.winner, winnerName: msg.winnerName }
@@ -141,6 +141,14 @@ export function useGameSocket() {
     send({ type: 'chooseColor', color })
   }
 
+  function startGame() {
+    send({ type: 'startGame' })
+  }
+
+  function chooseTarget(targetIndex: number) {
+    send({ type: 'chooseTarget', targetIndex })
+  }
+
   function disconnect() {
     deliberateClose = true
     lastConnectArgs = null
@@ -177,14 +185,16 @@ export function useGameSocket() {
     error: readonly(error),
     roomInfo: readonly(roomInfo),
     gameStarted: readonly(gameStarted),
-    opponentDisconnected: readonly(opponentDisconnected),
+    disconnectedPlayers: readonly(disconnectedPlayers),
     gameOver: readonly(gameOver),
-    guestJoined: readonly(guestJoined),
+    lobbyPlayers: readonly(lobbyPlayers),
     connect,
     playCard,
     draw,
     pass,
     chooseColor,
+    startGame,
+    chooseTarget,
     disconnect,
     shiftAnimation,
     flushDeferredState

@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const rooms = await sql`
-    SELECT gr.id, gr.code, gr.game_type, gr.host_user_id, gr.status, gr.guest_name, gr.created_at,
+    SELECT gr.id, gr.code, gr.game_type, gr.host_user_id, gr.status, gr.guest_name, gr.player_names, gr.created_at,
            u.display_name as host_name
     FROM game_rooms gr
     JOIN users u ON u.id = gr.host_user_id
@@ -25,6 +25,7 @@ export default defineEventHandler(async (event) => {
     hostName: room.host_name,
     hostUserId: room.host_user_id,
     guestName: room.guest_name,
+    playerNames: room.player_names || [],
     createdAt: room.created_at
   }
 })

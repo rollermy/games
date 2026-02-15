@@ -2,17 +2,18 @@ import jwt from 'jsonwebtoken'
 import type { Peer } from 'crossws'
 import type { ClientMessage, ServerMessage, AnimationEvent } from '../../game/dos/types'
 import { getGame, createGame, removeGame, getSanitizedState } from '../../game/dos/state'
-import { handlePlayCard, handleDraw, handlePass, handleChooseColor } from '../../game/dos/logic'
+import { handlePlayCard, handleDraw, handlePass, handleChooseColor, handleChooseTarget } from '../../game/dos/logic'
 
 interface PeerContext {
   roomCode: string
-  playerIndex: 0 | 1
+  playerIndex: number
   role: 'host' | 'guest'
   name: string
 }
 
 const peerContexts = new Map<string, PeerContext>()
 const roomPeers = new Map<string, Map<number, Peer>>()
+const roomLobbies = new Map<string, { index: number; name: string }[]>()
 
 function send(peer: Peer, msg: ServerMessage) {
   peer.send(JSON.stringify(msg))
@@ -26,7 +27,7 @@ function broadcastState(roomCode: string) {
   if (!peers) return
 
   for (const [playerIndex, peer] of peers) {
-    const state = getSanitizedState(game, playerIndex as 0 | 1)
+    const state = getSanitizedState(game, playerIndex)
     send(peer, { type: 'state', state })
   }
 }
@@ -47,6 +48,11 @@ function broadcastToRoom(roomCode: string, msg: ServerMessage) {
   for (const [, peer] of peers) {
     send(peer, msg)
   }
+}
+
+function broadcastLobbyUpdate(roomCode: string) {
+  const lobby = roomLobbies.get(roomCode) || []
+  broadcastToRoom(roomCode, { type: 'lobbyUpdate', players: lobby })
 }
 
 export default defineWebSocketHandler({
@@ -72,7 +78,7 @@ export default defineWebSocketHandler({
     const room = rooms[0]
 
     let playerName: string
-    let playerIndex: 0 | 1
+    let playerIndex: number
 
     if (role === 'host') {
       // Validate JWT from cookie
@@ -115,11 +121,32 @@ export default defineWebSocketHandler({
       }
 
       playerName = guestName || 'Guest'
-      playerIndex = 1
 
-      // Update guest name in DB
-      if (room.status === 'waiting') {
-        await sql`UPDATE game_rooms SET guest_name = ${playerName}, updated_at = now() WHERE code = ${code}`
+      // Assign player index based on lobby
+      const lobby = roomLobbies.get(code) || []
+      const existingEntry = lobby.find(p => p.name === playerName)
+      if (existingEntry) {
+        playerIndex = existingEntry.index
+      } else {
+        // Check if game is already playing (reconnection scenario for guests)
+        const existingGame = getGame(code)
+        if (existingGame) {
+          const existingIdx = existingGame.playerNames.indexOf(playerName)
+          if (existingIdx >= 0) {
+            playerIndex = existingIdx
+          } else {
+            send(peer, { type: 'error', message: 'Game already in progress' })
+            peer.close(4002, 'Game in progress')
+            return
+          }
+        } else {
+          if (lobby.length >= 6) {
+            send(peer, { type: 'error', message: 'Room is full (max 6 players)' })
+            peer.close(4002, 'Room full')
+            return
+          }
+          playerIndex = lobby.length > 0 ? Math.max(...lobby.map(p => p.index)) + 1 : 1
+        }
       }
     }
 
@@ -133,7 +160,7 @@ export default defineWebSocketHandler({
     }
     const peers = roomPeers.get(code)!
 
-    // Handle reconnection
+    // Handle reconnection to active game
     const existingGame = getGame(code)
     if (existingGame) {
       existingGame.connected[playerIndex] = true
@@ -143,10 +170,11 @@ export default defineWebSocketHandler({
       }
       peers.set(playerIndex, peer)
 
-      // Notify opponent of reconnection
-      const opponentPeer = peers.get(playerIndex === 0 ? 1 : 0)
-      if (opponentPeer) {
-        send(opponentPeer, { type: 'opponentReconnected' })
+      // Notify all other peers of reconnection
+      for (const [idx, p] of peers) {
+        if (idx !== playerIndex) {
+          send(p, { type: 'playerReconnected', playerIndex, playerName })
+        }
       }
 
       // Send current state
@@ -155,6 +183,15 @@ export default defineWebSocketHandler({
     }
 
     peers.set(playerIndex, peer)
+
+    // Initialize or update lobby
+    if (!roomLobbies.has(code)) {
+      roomLobbies.set(code, [])
+    }
+    const lobby = roomLobbies.get(code)!
+    if (!lobby.find(p => p.index === playerIndex)) {
+      lobby.push({ index: playerIndex, name: playerName })
+    }
 
     // Send room info
     const hostUsers = await sql`SELECT display_name FROM users WHERE id = ${room.host_user_id}`
@@ -167,47 +204,65 @@ export default defineWebSocketHandler({
       status: room.status
     })
 
-    // Check if both players are connected and game hasn't started
-    if (peers.size === 2 && room.status === 'waiting') {
-      const hostPeer = peers.get(0)
-      const guestPeer = peers.get(1)
-      const hostCtx = [...peerContexts.values()].find(c => c.roomCode === code && c.playerIndex === 0)
-      const guestCtx = [...peerContexts.values()].find(c => c.roomCode === code && c.playerIndex === 1)
-
-      if (hostPeer && guestPeer && hostCtx && guestCtx) {
-        // Notify host that guest joined
-        send(hostPeer, { type: 'playerJoined', guestName: guestCtx.name })
-
-        // Create game state
-        createGame(code, hostCtx.name, guestCtx.name)
-
-        // Update DB
-        await sql`UPDATE game_rooms SET status = 'playing', updated_at = now() WHERE code = ${code}`
-
-        // Broadcast game started
-        broadcastToRoom(code, { type: 'gameStarted' })
-
-        // Send initial state
-        broadcastState(code)
-      }
-    }
+    // Broadcast lobby update to all peers
+    broadcastLobbyUpdate(code)
   },
 
   async message(peer, message) {
     const ctx = peerContexts.get(peer.id)
     if (!ctx) return
 
-    const game = getGame(ctx.roomCode)
-    if (!game) {
-      send(peer, { type: 'error', message: 'Game not found' })
-      return
-    }
-
     let msg: ClientMessage
     try {
       msg = JSON.parse(message.text())
     } catch {
       send(peer, { type: 'error', message: 'Invalid message format' })
+      return
+    }
+
+    // Handle startGame before game exists
+    if (msg.type === 'startGame') {
+      if (ctx.playerIndex !== 0) {
+        send(peer, { type: 'error', message: 'Only the host can start the game' })
+        return
+      }
+
+      const existingGame = getGame(ctx.roomCode)
+      if (existingGame) {
+        send(peer, { type: 'error', message: 'Game already started' })
+        return
+      }
+
+      const lobby = roomLobbies.get(ctx.roomCode)
+      if (!lobby || lobby.length < 2) {
+        send(peer, { type: 'error', message: 'Need at least 2 players to start' })
+        return
+      }
+
+      // Sort lobby by index to ensure consistent ordering
+      lobby.sort((a, b) => a.index - b.index)
+      const playerNames = lobby.map(p => p.name)
+
+      // Create game state
+      createGame(ctx.roomCode, playerNames)
+
+      // Update DB
+      await sql`UPDATE game_rooms SET status = 'playing', player_names = ${JSON.stringify(playerNames)}, updated_at = now() WHERE code = ${ctx.roomCode}`
+
+      // Broadcast game started
+      broadcastToRoom(ctx.roomCode, { type: 'gameStarted' })
+
+      // Send initial state
+      broadcastState(ctx.roomCode)
+
+      // Clean up lobby
+      roomLobbies.delete(ctx.roomCode)
+      return
+    }
+
+    const game = getGame(ctx.roomCode)
+    if (!game) {
+      send(peer, { type: 'error', message: 'Game not found' })
       return
     }
 
@@ -226,6 +281,9 @@ export default defineWebSocketHandler({
       case 'chooseColor':
         result = handleChooseColor(game, ctx.playerIndex, msg.color)
         break
+      case 'chooseTarget':
+        result = handleChooseTarget(game, ctx.playerIndex, msg.targetIndex)
+        break
       default:
         send(peer, { type: 'error', message: 'Unknown action' })
         return
@@ -236,7 +294,7 @@ export default defineWebSocketHandler({
       return
     }
 
-    // Broadcast animations to both players
+    // Broadcast animations to all players
     for (const event of result.events) {
       broadcastAnimation(ctx.roomCode, event)
     }
@@ -265,14 +323,12 @@ export default defineWebSocketHandler({
     if (game) {
       game.connected[ctx.playerIndex] = false
 
-      // Notify opponent
+      // Notify all remaining peers
       const peers = roomPeers.get(ctx.roomCode)
       if (peers) {
         peers.delete(ctx.playerIndex)
-        const opponentIndex = ctx.playerIndex === 0 ? 1 : 0
-        const opponentPeer = peers.get(opponentIndex)
-        if (opponentPeer) {
-          send(opponentPeer, { type: 'opponentDisconnected' })
+        for (const [, p] of peers) {
+          send(p, { type: 'playerDisconnected', playerIndex: ctx.playerIndex, playerName: ctx.name })
         }
       }
 
@@ -280,20 +336,32 @@ export default defineWebSocketHandler({
       game.disconnectTimers[ctx.playerIndex] = setTimeout(() => {
         const currentGame = getGame(ctx.roomCode)
         if (currentGame && !currentGame.connected[ctx.playerIndex]) {
-          // If both disconnected, clean up
-          if (!currentGame.connected[0] && !currentGame.connected[1]) {
+          // If all disconnected, clean up
+          if (currentGame.connected.every(c => !c)) {
             removeGame(ctx.roomCode)
             roomPeers.delete(ctx.roomCode)
           }
         }
       }, 60000)
     } else {
-      // No active game, clean up peer tracking
+      // No active game — remove from lobby and peers
       const peers = roomPeers.get(ctx.roomCode)
       if (peers) {
         peers.delete(ctx.playerIndex)
         if (peers.size === 0) {
           roomPeers.delete(ctx.roomCode)
+        }
+      }
+
+      // Remove from lobby
+      const lobby = roomLobbies.get(ctx.roomCode)
+      if (lobby) {
+        const idx = lobby.findIndex(p => p.index === ctx.playerIndex)
+        if (idx >= 0) lobby.splice(idx, 1)
+        if (lobby.length === 0) {
+          roomLobbies.delete(ctx.roomCode)
+        } else {
+          broadcastLobbyUpdate(ctx.roomCode)
         }
       }
     }

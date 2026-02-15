@@ -4,23 +4,32 @@ interface Card {
   value: string
 }
 
+interface Opponent {
+  index: number
+  name: string
+  cardCount: number
+  connected: boolean
+}
+
 interface ClientGameState {
   myHand: Card[]
-  opponentCardCount: number
+  opponents: Opponent[]
   discardTop: Card | null
   deckCount: number
-  currentPlayer: 0 | 1
-  myIndex: 0 | 1
-  winner: 0 | 1 | null
+  numPlayers: number
+  currentPlayer: number
+  myIndex: number
+  winner: number | null
   isFlipped: boolean
   pendingDraw: number
   pendingCardType: string | null
   mustChooseColor: boolean
   chosenWildColor: string | null
   justDrawnCard: Card | null
-  playerNames: [string, string]
+  playerNames: string[]
   myName: string
-  opponentName: string
+  choosingTarget: boolean
+  targetableOpponents: number[]
 }
 
 const props = defineProps<{
@@ -32,18 +41,18 @@ const emit = defineEmits<{
   draw: []
   pass: []
   chooseColor: [color: string]
+  chooseTarget: [targetIndex: number]
 }>()
 
 const doomedMyIndices = inject<Ref<number[]>>('doomedMyIndices', ref([]))
 const hiddenMyIndices = inject<Ref<number[]>>('hiddenMyIndices', ref([]))
-const doomedOpponentIndices = inject<Ref<number[]>>('doomedOpponentIndices', ref([]))
-const hiddenOpponentIndices = inject<Ref<number[]>>('hiddenOpponentIndices', ref([]))
+const doomedOpponentMap = inject<Ref<Record<number, number[]>>>('doomedOpponentMap', ref({}))
+const hiddenOpponentMap = inject<Ref<Record<number, number[]>>>('hiddenOpponentMap', ref({}))
 
 const isMyTurn = computed(() => props.state.currentPlayer === props.state.myIndex)
-const opponentIndex = computed(() => (props.state.myIndex === 0 ? 1 : 0) as 0 | 1)
 
 const canDraw = computed(() =>
-  isMyTurn.value && !props.state.mustChooseColor && props.state.winner === null
+  isMyTurn.value && !props.state.mustChooseColor && !props.state.choosingTarget && props.state.winner === null
 )
 
 const showPassBtn = computed(() =>
@@ -59,7 +68,7 @@ const mustDraw = computed(() => props.state.pendingDraw > 0)
 
 // Determine which cards in hand are playable
 const playableIndices = computed(() => {
-  if (!isMyTurn.value || props.state.mustChooseColor || props.state.winner !== null) return []
+  if (!isMyTurn.value || props.state.mustChooseColor || props.state.choosingTarget || props.state.winner !== null) return []
 
   const top = props.state.discardTop
   if (!top) return []
@@ -74,7 +83,6 @@ const playableIndices = computed(() => {
 
 const justDrawnIndex = computed(() => {
   if (!props.state.justDrawnCard) return null
-  // Just drawn card is always last in sorted hand — find it
   const jd = props.state.justDrawnCard
   for (let i = props.state.myHand.length - 1; i >= 0; i--) {
     const c = props.state.myHand[i]
@@ -85,6 +93,7 @@ const justDrawnIndex = computed(() => {
 
 function canPlayCard(card: Card, top: Card): boolean {
   if (props.state.mustChooseColor) return false
+  if (props.state.choosingTarget) return false
 
   if (props.state.pendingDraw > 0 && props.state.pendingCardType) {
     if (props.state.pendingCardType === 'Wild+4') {
@@ -102,10 +111,15 @@ function canPlayCard(card: Card, top: Card): boolean {
   return card.color === top.color || card.value === top.value
 }
 
+const currentTurnName = computed(() => {
+  return props.state.playerNames[props.state.currentPlayer] || ''
+})
+
 const statusText = computed(() => {
   if (props.state.winner !== null) return ''
-  const turnText = isMyTurn.value ? 'Your turn' : `${props.state.opponentName}'s turn`
+  const turnText = isMyTurn.value ? 'Your turn' : `${currentTurnName.value}'s turn`
 
+  if (props.state.choosingTarget && isMyTurn.value) return `${turnText} — Choose a target`
   if (props.state.mustChooseColor) return `${turnText} — Choose a color`
   if (props.state.pendingDraw > 0 && isMyTurn.value) {
     const cardType = props.state.pendingCardType === 'Wild+4' ? '+4' : props.state.pendingCardType
@@ -156,19 +170,31 @@ function needsDarkText(color: string): boolean {
 
 <template>
   <div class="dos-board">
-    <!-- Opponent area -->
-    <div class="dos-opponent-area">
-      <div class="dos-player-info">
-        <span>{{ state.opponentName }}</span>
-        <span class="dos-card-count">{{ state.opponentCardCount }}</span>
+    <!-- Opponents row -->
+    <div class="dos-opponents-row">
+      <div
+        v-for="opp in state.opponents"
+        :key="opp.index"
+        class="dos-opponent-area"
+        :data-player-index="opp.index"
+        :class="{ 'is-current-turn': state.currentPlayer === opp.index, 'is-disconnected': !opp.connected }"
+      >
+        <div class="dos-player-info">
+          <span>
+            {{ opp.name }}
+            <span v-if="!opp.connected" class="dos-disconnected-badge">DC</span>
+          </span>
+          <span class="dos-card-count">{{ opp.cardCount }}</span>
+        </div>
+        <GamesDosHand
+          :cards="Array(opp.cardCount).fill({ color: '', value: '' })"
+          :is-my-hand="false"
+          :is-my-turn="false"
+          :doomed-indices="doomedOpponentMap[opp.index] || []"
+          :hidden-indices="hiddenOpponentMap[opp.index] || []"
+          :data-player-index="opp.index"
+        />
       </div>
-      <GamesDosHand
-        :cards="Array(state.opponentCardCount).fill({ color: '', value: '' })"
-        :is-my-hand="false"
-        :is-my-turn="false"
-        :doomed-indices="doomedOpponentIndices"
-        :hidden-indices="hiddenOpponentIndices"
-      />
     </div>
 
     <!-- Status bar -->
@@ -223,6 +249,21 @@ function needsDarkText(color: string): boolean {
     <div v-if="state.mustChooseColor && isMyTurn" class="py-4">
       <p class="text-center font-bold mb-2">Choose a color:</p>
       <GamesDosColorPicker :is-flipped="state.isFlipped" @choose="emit('chooseColor', $event)" />
+    </div>
+
+    <!-- Target chooser overlay -->
+    <div v-if="state.choosingTarget && isMyTurn" class="dos-target-chooser">
+      <p class="text-center font-bold mb-4 text-xl">Choose a target:</p>
+      <div class="dos-target-buttons">
+        <button
+          v-for="targetIdx in state.targetableOpponents"
+          :key="targetIdx"
+          class="dos-target-btn"
+          @click="emit('chooseTarget', targetIdx)"
+        >
+          {{ state.playerNames[targetIdx] }}
+        </button>
+      </div>
     </div>
 
     <!-- My hand -->

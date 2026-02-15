@@ -14,9 +14,10 @@ export interface DosGameState {
   roomCode: string
   deck: Card[]
   discardPile: Card[]
-  hands: [Card[], Card[]]
-  currentPlayer: 0 | 1
-  winner: 0 | 1 | null
+  hands: Card[][]
+  numPlayers: number
+  currentPlayer: number
+  winner: number | null
   isFlipped: boolean
   flipMaps: FlipMaps
   pendingDraw: number
@@ -24,30 +25,33 @@ export interface DosGameState {
   mustChooseColor: boolean
   chosenWildColor: string | null
   justDrawnCard: Card | null
-  justDrawnPlayerIndex: 0 | 1 | null
-  lastCardCounts: [number, number]
-  playerNames: [string, string]
-  connected: [boolean, boolean]
-  disconnectTimers: [ReturnType<typeof setTimeout> | null, ReturnType<typeof setTimeout> | null]
+  justDrawnPlayerIndex: number | null
+  lastCardCounts: number[]
+  playerNames: string[]
+  connected: boolean[]
+  disconnectTimers: (ReturnType<typeof setTimeout> | null)[]
+  choosingTarget: { playerIndex: number; cardType: 'Gift' | 'FairyGobble' } | null
 }
 
 export interface ClientGameState {
   myHand: Card[]
-  opponentCardCount: number
+  opponents: { index: number; name: string; cardCount: number; connected: boolean }[]
   discardTop: Card | null
   deckCount: number
-  currentPlayer: 0 | 1
-  myIndex: 0 | 1
-  winner: 0 | 1 | null
+  numPlayers: number
+  currentPlayer: number
+  myIndex: number
+  winner: number | null
   isFlipped: boolean
   pendingDraw: number
   pendingCardType: string | null
   mustChooseColor: boolean
   chosenWildColor: string | null
   justDrawnCard: Card | null
-  playerNames: [string, string]
+  playerNames: string[]
   myName: string
-  opponentName: string
+  choosingTarget: boolean
+  targetableOpponents: number[]
 }
 
 // Client → Server messages
@@ -56,26 +60,28 @@ export type ClientMessage =
   | { type: 'draw' }
   | { type: 'pass' }
   | { type: 'chooseColor'; color: string }
+  | { type: 'chooseTarget'; targetIndex: number }
+  | { type: 'startGame' }
 
 // Server → Client messages
 export type ServerMessage =
   | { type: 'state'; state: ClientGameState }
   | { type: 'error'; message: string }
   | { type: 'roomInfo'; code: string; hostName: string; status: string }
-  | { type: 'playerJoined'; guestName: string }
+  | { type: 'lobbyUpdate'; players: { index: number; name: string }[] }
   | { type: 'gameStarted' }
   | { type: 'animation'; event: AnimationEvent }
-  | { type: 'opponentDisconnected' }
-  | { type: 'opponentReconnected' }
-  | { type: 'gameOver'; winner: 0 | 1; winnerName: string }
+  | { type: 'playerDisconnected'; playerIndex: number; playerName: string }
+  | { type: 'playerReconnected'; playerIndex: number; playerName: string }
+  | { type: 'gameOver'; winner: number; winnerName: string }
 
 // Animation events
 export type AnimationEvent =
   | { kind: 'cardPlayed'; card: Card }
-  | { kind: 'giftPlayed'; recipientIndex: 0 | 1; giftCard: Card }
-  | { kind: 'fairyGobble'; thiefIndex: 0 | 1; stolenCard: Card; stolenCardIndex: number }
+  | { kind: 'giftPlayed'; recipientIndex: number; giftCard: Card }
+  | { kind: 'fairyGobble'; thiefIndex: number; victimIndex: number; stolenCard: Card; stolenCardIndex: number }
   | { kind: 'flip'; isNowFlipped: boolean }
-  | { kind: 'halfItUp'; removedCards: [Card[], Card[]] }
-  | { kind: 'victory'; winnerIndex: 0 | 1; winnerName: string }
-  | { kind: 'announcement'; text: string; playerIndex: 0 | 1 }
-  | { kind: 'cardsDrawn'; playerIndex: 0 | 1; count: number }
+  | { kind: 'halfItUp'; removedCards: Card[][] }
+  | { kind: 'victory'; winnerIndex: number; winnerName: string }
+  | { kind: 'announcement'; text: string; playerIndex: number }
+  | { kind: 'cardsDrawn'; playerIndex: number; count: number }

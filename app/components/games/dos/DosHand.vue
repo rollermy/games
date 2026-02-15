@@ -12,6 +12,7 @@ const props = defineProps<{
   justDrawnIndex?: number | null
   doomedIndices?: number[]
   hiddenIndices?: number[]
+  dataPlayerIndex?: number
 }>()
 
 const emit = defineEmits<{

@@ -1,26 +1,34 @@
 <script setup lang="ts">
 type AnimationEvent =
   | { kind: 'cardPlayed'; card: { color: string; value: string } }
-  | { kind: 'giftPlayed'; recipientIndex: 0 | 1; giftCard: { color: string; value: string } }
-  | { kind: 'fairyGobble'; thiefIndex: 0 | 1; stolenCard: { color: string; value: string }; stolenCardIndex: number }
+  | { kind: 'giftPlayed'; recipientIndex: number; giftCard: { color: string; value: string } }
+  | { kind: 'fairyGobble'; thiefIndex: number; victimIndex: number; stolenCard: { color: string; value: string }; stolenCardIndex: number }
   | { kind: 'flip'; isNowFlipped: boolean }
-  | { kind: 'halfItUp'; removedCards: [{ color: string; value: string }[], { color: string; value: string }[]] }
-  | { kind: 'victory'; winnerIndex: 0 | 1; winnerName: string }
-  | { kind: 'announcement'; text: string; playerIndex: 0 | 1 }
-  | { kind: 'cardsDrawn'; playerIndex: 0 | 1; count: number }
+  | { kind: 'halfItUp'; removedCards: { color: string; value: string }[][] }
+  | { kind: 'victory'; winnerIndex: number; winnerName: string }
+  | { kind: 'announcement'; text: string; playerIndex: number }
+  | { kind: 'cardsDrawn'; playerIndex: number; count: number }
+
+interface Opponent {
+  index: number
+  name: string
+  cardCount: number
+  connected: boolean
+}
 
 const props = defineProps<{
-  playerNames: [string, string]
-  myIndex: 0 | 1
+  playerNames: string[]
+  myIndex: number
   myHand: { color: string; value: string }[]
+  opponents: Opponent[]
 }>()
 
 const shiftAnimation = inject<() => AnimationEvent | undefined>('shiftAnimation')
 const flushDeferredState = inject<() => void>('flushDeferredState')
 const doomedMyIndices = inject<Ref<number[]>>('doomedMyIndices')
 const hiddenMyIndices = inject<Ref<number[]>>('hiddenMyIndices')
-const doomedOpponentIndices = inject<Ref<number[]>>('doomedOpponentIndices')
-const hiddenOpponentIndices = inject<Ref<number[]>>('hiddenOpponentIndices')
+const doomedOpponentMap = inject<Ref<Record<number, number[]>>>('doomedOpponentMap')
+const hiddenOpponentMap = inject<Ref<Record<number, number[]>>>('hiddenOpponentMap')
 
 const currentAnim = ref<AnimationEvent | null>(null)
 
@@ -99,7 +107,7 @@ function processNext() {
   switch (next.kind) {
     case 'cardPlayed': scheduleNext(600); break
     case 'giftPlayed': playGiftAnimation(); break
-    case 'fairyGobble': playFairyGobbleAnimation(next.thiefIndex, next.stolenCardIndex); break
+    case 'fairyGobble': playFairyGobbleAnimation(next.thiefIndex, next.victimIndex, next.stolenCardIndex); break
     case 'flip': playFlipAnimation(next.isNowFlipped); break
     case 'halfItUp': playHalfItUpAnimation(next.removedCards); break
     case 'victory': playVictoryAnimation(); break
@@ -128,16 +136,13 @@ function playGiftAnimation() {
   giftGlitter.value = []
   giftFadingOut.value = false
 
-  // T+500ms: Start shaking
   later(() => { giftShaking.value = true }, 500)
 
-  // T+2500ms: Open lid, reveal card, star burst
   later(() => {
     giftShaking.value = false
     giftOpened.value = true
     giftCardRevealed.value = true
 
-    // 12 star burst particles
     const stars: typeof giftStars.value = []
     for (let i = 0; i < 12; i++) {
       stars.push({ id: i, x: 0, y: 0, angle: (360 / 12) * i })
@@ -145,10 +150,8 @@ function playGiftAnimation() {
     giftStars.value = stars
   }, 2500)
 
-  // T+3300ms: Show subtitle
   later(() => { giftSubtitleVisible.value = true }, 3300)
 
-  // T+2700ms: Spawn glitter
   later(() => {
     for (let i = 0; i < 80; i++) {
       later(() => {
@@ -167,13 +170,12 @@ function playGiftAnimation() {
     }
   }, 2700)
 
-  // T+6000ms: Fade out
   later(() => { giftFadingOut.value = true }, 6000)
   scheduleNext(7000)
 }
 
 // ─── FAIRY GOBBLE ANIMATION ───
-function playFairyGobbleAnimation(thiefIndex: 0 | 1, stolenCardIndex: number) {
+function playFairyGobbleAnimation(thiefIndex: number, victimIndex: number, stolenCardIndex: number) {
   fairyMessageVisible.value = false
   fairySubtitleVisible.value = false
   fairyEating.value = false
@@ -185,24 +187,27 @@ function playFairyGobbleAnimation(thiefIndex: 0 | 1, stolenCardIndex: number) {
 
   const edges = ['top', 'right', 'bottom', 'left']
 
-  // Determine if the stolen card is from my hand or opponent's
-  const victimIndex = (thiefIndex === 0 ? 1 : 0) as 0 | 1
   const stolenFromMe = victimIndex === props.myIndex
 
   // Highlight the target card in the victim's hand
   if (stolenFromMe) {
-    // Find the actual card index in my hand by matching
     if (doomedMyIndices) doomedMyIndices.value = [stolenCardIndex]
   } else {
-    // Highlight a random opponent card (they're face-down)
-    if (doomedOpponentIndices) doomedOpponentIndices.value = [stolenCardIndex]
+    if (doomedOpponentMap) {
+      doomedOpponentMap.value = { ...doomedOpponentMap.value, [victimIndex]: [stolenCardIndex] }
+    }
   }
 
   // Capture target card position
-  let targetX = 50 // % of viewport
-  let targetY = stolenFromMe ? 80 : 10 // bottom if mine, top if opponent
+  let targetX = 50
+  let targetY = stolenFromMe ? 80 : 10
   later(() => {
-    const selector = stolenFromMe ? '.dos-my-area .dos-card' : '.dos-opponent-area .dos-card'
+    let selector: string
+    if (stolenFromMe) {
+      selector = '.dos-my-area .dos-card'
+    } else {
+      selector = `[data-player-index="${victimIndex}"] .dos-card`
+    }
     const cardEls = document.querySelectorAll(selector)
     const targetEl = cardEls[stolenCardIndex] as HTMLElement | undefined
     if (targetEl) {
@@ -223,12 +228,9 @@ function playFairyGobbleAnimation(thiefIndex: 0 | 1, stolenCardIndex: number) {
   }
   fairyStyle.value = { ...startPos, transition: 'none' }
 
-  // T+500ms: Show message
   later(() => { fairyMessageVisible.value = true }, 500)
-  // T+800ms: Show subtitle
   later(() => { fairySubtitleVisible.value = true }, 800)
 
-  // T+1500ms: Spawn background fairies
   later(() => {
     for (let i = 0; i < 15; i++) {
       later(() => {
@@ -261,7 +263,6 @@ function playFairyGobbleAnimation(thiefIndex: 0 | 1, stolenCardIndex: number) {
     }
   }, 1500)
 
-  // T+2000ms: Fairy flies toward the target card
   later(() => {
     fairyStyle.value = {
       top: targetY + '%', left: (targetX - 3) + '%',
@@ -286,7 +287,6 @@ function playFairyGobbleAnimation(thiefIndex: 0 | 1, stolenCardIndex: number) {
     allTimeouts.push(trailInterval as unknown as ReturnType<typeof setTimeout>)
   }, 2000)
 
-  // T+3400ms: Fairy reaches card, eating animation
   later(() => {
     fairyStyle.value = {
       top: targetY + '%', left: targetX + '%',
@@ -307,23 +307,27 @@ function playFairyGobbleAnimation(thiefIndex: 0 | 1, stolenCardIndex: number) {
     allTimeouts.push(pulseInterval as unknown as ReturnType<typeof setTimeout>)
   }, 3400)
 
-  // T+4200ms: Card disappears — hide via indices and flush state
   later(() => {
     if (stolenFromMe) {
       if (hiddenMyIndices) hiddenMyIndices.value = [stolenCardIndex]
       if (doomedMyIndices) doomedMyIndices.value = []
     } else {
-      if (hiddenOpponentIndices) hiddenOpponentIndices.value = [stolenCardIndex]
-      if (doomedOpponentIndices) doomedOpponentIndices.value = []
+      if (hiddenOpponentMap) {
+        hiddenOpponentMap.value = { ...hiddenOpponentMap.value, [victimIndex]: [stolenCardIndex] }
+      }
+      if (doomedOpponentMap) {
+        const copy = { ...doomedOpponentMap.value }
+        delete copy[victimIndex]
+        doomedOpponentMap.value = copy
+      }
     }
     later(() => {
       if (flushDeferredState) flushDeferredState()
       if (hiddenMyIndices) hiddenMyIndices.value = []
-      if (hiddenOpponentIndices) hiddenOpponentIndices.value = []
+      if (hiddenOpponentMap) hiddenOpponentMap.value = {}
     }, 300)
   }, 4200)
 
-  // T+5000ms: Fairy exits with mini-fairies
   later(() => {
     fairyEating.value = false
     fairyExiting.value = true
@@ -373,7 +377,6 @@ function playFlipAnimation(isNowFlipped: boolean) {
         color,
         shadow: `0 0 15px ${color}, 0 0 30px ${color}`
       }]
-      // Remove after 1s
       later(() => {
         flipLights.value = flipLights.value.filter(l => l.id !== Date.now() + i)
       }, 1000)
@@ -383,13 +386,18 @@ function playFlipAnimation(isNowFlipped: boolean) {
 }
 
 // ─── HALF IT UP ANIMATION ───
-function playHalfItUpAnimation(removedCards: [{ color: string; value: string }[], { color: string; value: string }[]]) {
+function playHalfItUpAnimation(removedCards: { color: string; value: string }[][]) {
   halfBannerVisible.value = true
   halfFlyingCards.value = []
   halfGlitterTrails.value = []
 
   const myRemoved = removedCards[props.myIndex]
-  const opponentRemoved = removedCards[props.myIndex === 0 ? 1 : 0]
+
+  // Build per-opponent removed cards and compute doomed indices
+  const opponentRemovedMap: Record<number, { color: string; value: string }[]> = {}
+  for (const opp of props.opponents) {
+    opponentRemovedMap[opp.index] = removedCards[opp.index] || []
+  }
 
   // Find which indices in myHand match the removed cards
   const usedIndices = new Set<number>()
@@ -404,19 +412,23 @@ function playHalfItUpAnimation(removedCards: [{ color: string; value: string }[]
     }
   }
 
-  // Pick random opponent card indices to highlight
-  const oppCardCount = document.querySelectorAll('.dos-opponent-area .dos-card').length
-  const oppIndicesPool = [...Array(oppCardCount).keys()]
-  for (let i = oppIndicesPool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [oppIndicesPool[i], oppIndicesPool[j]] = [oppIndicesPool[j], oppIndicesPool[i]]
+  // Pick random opponent card indices to highlight per opponent
+  const doomedOppMap: Record<number, number[]> = {}
+  for (const opp of props.opponents) {
+    const oppRemoved = opponentRemovedMap[opp.index]
+    const oppCardCount = document.querySelectorAll(`[data-player-index="${opp.index}"] .dos-card`).length
+    const oppIndicesPool = [...Array(oppCardCount).keys()]
+    for (let i = oppIndicesPool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [oppIndicesPool[i], oppIndicesPool[j]] = [oppIndicesPool[j], oppIndicesPool[i]]
+    }
+    doomedOppMap[opp.index] = oppIndicesPool.slice(0, Math.min(oppRemoved.length, oppCardCount))
   }
-  const doomedOppIndices = oppIndicesPool.slice(0, Math.min(opponentRemoved.length, oppCardCount))
 
-  // T+800ms: Mark actual hand cards as doomed (red pulsing glow)
+  // T+800ms: Mark actual hand cards as doomed
   later(() => {
     if (doomedMyIndices) doomedMyIndices.value = doomedIndices
-    if (doomedOpponentIndices) doomedOpponentIndices.value = doomedOppIndices
+    if (doomedOpponentMap) doomedOpponentMap.value = doomedOppMap
   }, 800)
 
   // T+2200ms: Capture DOM positions, then stagger-launch flying clones
@@ -437,43 +449,53 @@ function playHalfItUpAnimation(removedCards: [{ color: string; value: string }[]
       }
     }
 
-    // Capture positions of doomed cards from opponent hand
-    const oppCardEls = document.querySelectorAll('.dos-opponent-area .dos-card')
-    const oppCardPositions: { left: number; top: number }[] = []
-    for (const idx of doomedOppIndices) {
-      const el = oppCardEls[idx] as HTMLElement | undefined
-      if (el) {
-        const rect = el.getBoundingClientRect()
-        oppCardPositions.push({
-          left: rect.left / window.innerWidth * 100,
-          top: rect.top / window.innerHeight * 100
+    // Capture positions of doomed cards from each opponent
+    const oppCardPositionsMap: Record<number, { left: number; top: number }[]> = {}
+    for (const opp of props.opponents) {
+      const oppCardEls = document.querySelectorAll(`[data-player-index="${opp.index}"] .dos-card`)
+      const positions: { left: number; top: number }[] = []
+      for (const idx of (doomedOppMap[opp.index] || [])) {
+        const el = oppCardEls[idx] as HTMLElement | undefined
+        if (el) {
+          const rect = el.getBoundingClientRect()
+          positions.push({
+            left: rect.left / window.innerWidth * 100,
+            top: rect.top / window.innerHeight * 100
+          })
+        } else {
+          positions.push({ left: 30 + Math.random() * 40, top: 5 })
+        }
+      }
+      oppCardPositionsMap[opp.index] = positions
+    }
+
+    // Stop the doomed glow
+    if (doomedMyIndices) doomedMyIndices.value = []
+    if (doomedOpponentMap) doomedOpponentMap.value = {}
+
+    // Build flying cards list
+    type FlyCard = { color: string; value: string; startLeft: number; startTop: number; myHandIdx: number | null; oppPlayerIndex: number | null; oppHandIdx: number | null }
+    const allFlyCards: FlyCard[] = []
+
+    // Opponent cards
+    for (const opp of props.opponents) {
+      const oppRemoved = opponentRemovedMap[opp.index]
+      const oppPositions = oppCardPositionsMap[opp.index] || []
+      const oppDoomed = doomedOppMap[opp.index] || []
+      for (let i = 0; i < oppRemoved.length; i++) {
+        allFlyCards.push({
+          color: oppRemoved[i].color,
+          value: oppRemoved[i].value,
+          startLeft: oppPositions[i]?.left ?? 50,
+          startTop: oppPositions[i]?.top ?? 5,
+          myHandIdx: null,
+          oppPlayerIndex: opp.index,
+          oppHandIdx: oppDoomed[i] ?? null
         })
-      } else {
-        oppCardPositions.push({ left: 30 + Math.random() * 40, top: 5 })
       }
     }
 
-    // Stop the doomed glow (cards are about to fly)
-    if (doomedMyIndices) doomedMyIndices.value = []
-    if (doomedOpponentIndices) doomedOpponentIndices.value = []
-
-    // Build flying cards list
-    type FlyCard = { color: string; value: string; startLeft: number; startTop: number; myHandIdx: number | null; oppHandIdx: number | null }
-    const allFlyCards: FlyCard[] = []
-
-    // Opponent cards from their actual DOM positions
-    for (let i = 0; i < opponentRemoved.length; i++) {
-      allFlyCards.push({
-        color: opponentRemoved[i].color,
-        value: opponentRemoved[i].value,
-        startLeft: oppCardPositions[i]?.left ?? 50,
-        startTop: oppCardPositions[i]?.top ?? 5,
-        myHandIdx: null,
-        oppHandIdx: doomedOppIndices[i] ?? null
-      })
-    }
-
-    // My cards from their actual DOM positions
+    // My cards
     for (let i = 0; i < myRemoved.length; i++) {
       allFlyCards.push({
         color: myRemoved[i].color,
@@ -481,6 +503,7 @@ function playHalfItUpAnimation(removedCards: [{ color: string; value: string }[]
         startLeft: myCardPositions[i]?.left ?? 50,
         startTop: myCardPositions[i]?.top ?? 80,
         myHandIdx: doomedIndices[i],
+        oppPlayerIndex: null,
         oppHandIdx: null
       })
     }
@@ -488,15 +511,16 @@ function playHalfItUpAnimation(removedCards: [{ color: string; value: string }[]
     const totalCards = allFlyCards.length
 
     for (let i = 0; i < totalCards; i++) {
-      const { color, value, startLeft, startTop, myHandIdx, oppHandIdx } = allFlyCards[i]
+      const { color, value, startLeft, startTop, myHandIdx, oppPlayerIndex, oppHandIdx } = allFlyCards[i]
 
       later(() => {
         // Hide this specific card from the hand as its clone launches
         if (myHandIdx !== null && hiddenMyIndices) {
           hiddenMyIndices.value = [...hiddenMyIndices.value, myHandIdx]
         }
-        if (oppHandIdx !== null && hiddenOpponentIndices) {
-          hiddenOpponentIndices.value = [...hiddenOpponentIndices.value, oppHandIdx]
+        if (oppPlayerIndex !== null && oppHandIdx !== null && hiddenOpponentMap) {
+          const current = hiddenOpponentMap.value[oppPlayerIndex] || []
+          hiddenOpponentMap.value = { ...hiddenOpponentMap.value, [oppPlayerIndex]: [...current, oppHandIdx] }
         }
 
         const cardId = Date.now() + i
@@ -516,9 +540,7 @@ function playHalfItUpAnimation(removedCards: [{ color: string; value: string }[]
           wingColor: 'gold'
         }]
 
-        // Start flight to discard pile center
         later(() => {
-          // Spawn glitter trail — 3 particles per tick like the original
           let glitterCount = 0
           const glitterInterval = setInterval(() => {
             if (glitterCount++ > 12) { clearInterval(glitterInterval); return }
@@ -540,7 +562,6 @@ function playHalfItUpAnimation(removedCards: [{ color: string; value: string }[]
           }, 50)
           allTimeouts.push(glitterInterval as unknown as ReturnType<typeof setTimeout>)
 
-          // Fly to discard pile center
           halfFlyingCards.value = halfFlyingCards.value.map(c =>
             c.id === cardId ? {
               ...c,
@@ -556,7 +577,6 @@ function playHalfItUpAnimation(removedCards: [{ color: string; value: string }[]
           )
         }, 100)
 
-        // Remove card after flight
         later(() => {
           halfFlyingCards.value = halfFlyingCards.value.filter(c => c.id !== cardId)
         }, 2000)
@@ -564,15 +584,18 @@ function playHalfItUpAnimation(removedCards: [{ color: string; value: string }[]
     }
   }, 2200)
 
-  const totalCards = myRemoved.length + opponentRemoved.length
-  const totalDuration = 2200 + totalCards * 180 + 2200
+  // Calculate total removed across all players
+  let totalRemovedCount = myRemoved.length
+  for (const opp of props.opponents) {
+    totalRemovedCount += (opponentRemovedMap[opp.index] || []).length
+  }
+  const totalDuration = 2200 + totalRemovedCount * 180 + 2200
 
-  // Safety: ensure state is flushed and all indices cleared when animation ends
   later(() => {
     if (doomedMyIndices) doomedMyIndices.value = []
     if (hiddenMyIndices) hiddenMyIndices.value = []
-    if (doomedOpponentIndices) doomedOpponentIndices.value = []
-    if (hiddenOpponentIndices) hiddenOpponentIndices.value = []
+    if (doomedOpponentMap) doomedOpponentMap.value = {}
+    if (hiddenOpponentMap) hiddenOpponentMap.value = {}
     if (flushDeferredState) flushDeferredState()
     halfBannerVisible.value = false
   }, Math.max(totalDuration, 4000) - 100)
@@ -621,7 +644,7 @@ function dismissVictory() {
 }
 
 // ─── ANNOUNCEMENT ───
-function playAnnouncement(text: string, playerIndex: 0 | 1) {
+function playAnnouncement(text: string, playerIndex: number) {
   if (typeof window !== 'undefined' && window.speechSynthesis) {
     window.speechSynthesis.cancel()
     const utterance = new SpeechSynthesisUtterance(text)
@@ -635,8 +658,8 @@ function playAnnouncement(text: string, playerIndex: 0 | 1) {
 onUnmounted(() => {
   if (doomedMyIndices) doomedMyIndices.value = []
   if (hiddenMyIndices) hiddenMyIndices.value = []
-  if (doomedOpponentIndices) doomedOpponentIndices.value = []
-  if (hiddenOpponentIndices) hiddenOpponentIndices.value = []
+  if (doomedOpponentMap) doomedOpponentMap.value = {}
+  if (hiddenOpponentMap) hiddenOpponentMap.value = {}
   if (flushDeferredState) flushDeferredState()
   clearAllTimers()
   if (victoryInterval) clearInterval(victoryInterval)
@@ -713,7 +736,7 @@ defineExpose({ processNext })
       FAIRY GOBBLE!
     </div>
     <div class="dos-fairy-subtitle" :style="{ opacity: fairySubtitleVisible ? 1 : 0, transition: 'opacity 0.5s' }">
-      {{ playerNames[currentAnim.thiefIndex] }} stole a card!
+      {{ playerNames[currentAnim.thiefIndex] }} stole a card from {{ playerNames[currentAnim.victimIndex] }}!
     </div>
 
     <!-- Main fairy -->
@@ -768,15 +791,15 @@ defineExpose({ processNext })
   </div>
 
   <!-- ═══ HALF IT UP ANIMATION ═══ -->
-  <!-- Banner (shown immediately, no blocking overlay during glow phase) -->
+  <!-- Banner -->
   <div v-if="currentAnim?.kind === 'halfItUp' && halfBannerVisible" class="dos-half-banner-fixed">
     HALF IT UP!
   </div>
   <p v-if="currentAnim?.kind === 'halfItUp' && halfBannerVisible" class="dos-half-subtitle-fixed">
-    Removing {{ currentAnim.removedCards[0].length }} + {{ currentAnim.removedCards[1].length }} cards!
+    Removing cards from all players!
   </p>
 
-  <!-- Overlay only during flight phase (when flying cards exist) -->
+  <!-- Overlay only during flight phase -->
   <div v-if="currentAnim?.kind === 'halfItUp' && halfFlyingCards.length > 0" class="dos-half-overlay">
     <!-- Flying cards with wings -->
     <div

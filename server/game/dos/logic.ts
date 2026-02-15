@@ -106,7 +106,7 @@ function transformAllCards(state: DosGameState): void {
     ? (c: Card) => getFlippedCard(c, state.flipMaps)
     : (c: Card) => getOriginalCard(c, state.flipMaps)
 
-  for (let p = 0; p < 2; p++) {
+  for (let p = 0; p < state.numPlayers; p++) {
     state.hands[p] = state.hands[p].map(transform)
   }
   state.discardPile = state.discardPile.map(transform)
@@ -164,18 +164,24 @@ export function sortHands(state: DosGameState): void {
     return (specialOrder[a.value] ?? 99) - (specialOrder[b.value] ?? 99)
   }
 
-  state.hands[0].sort(sortCards)
-  state.hands[1].sort(sortCards)
+  for (let p = 0; p < state.numPlayers; p++) {
+    state.hands[p].sort(sortCards)
+  }
 }
 
-export function createInitialState(roomCode: string, hostName: string, guestName: string): DosGameState {
+export function createInitialState(roomCode: string, playerNames: string[]): DosGameState {
+  const numPlayers = playerNames.length
   const flipMaps = initFlipMaps()
   const deck = shuffle(createDeck())
 
-  const hands: [Card[], Card[]] = [[], []]
+  const hands: Card[][] = []
+  for (let p = 0; p < numPlayers; p++) {
+    hands.push([])
+  }
   for (let i = 0; i < 7; i++) {
-    hands[0].push(deck.pop()!)
-    hands[1].push(deck.pop()!)
+    for (let p = 0; p < numPlayers; p++) {
+      hands[p].push(deck.pop()!)
+    }
   }
 
   // First discard card must be a plain number card (no wilds, specials, or action cards)
@@ -191,6 +197,7 @@ export function createInitialState(roomCode: string, hostName: string, guestName
     deck,
     discardPile,
     hands,
+    numPlayers,
     currentPlayer: 0,
     winner: null,
     isFlipped: false,
@@ -201,10 +208,11 @@ export function createInitialState(roomCode: string, hostName: string, guestName
     chosenWildColor: null,
     justDrawnCard: null,
     justDrawnPlayerIndex: null,
-    lastCardCounts: [7, 7],
-    playerNames: [hostName, guestName],
-    connected: [true, true],
-    disconnectTimers: [null, null]
+    lastCardCounts: Array(numPlayers).fill(7),
+    playerNames: [...playerNames],
+    connected: Array(numPlayers).fill(true),
+    disconnectTimers: Array(numPlayers).fill(null),
+    choosingTarget: null
   }
 
   sortHands(state)
@@ -213,6 +221,7 @@ export function createInitialState(roomCode: string, hostName: string, guestName
 
 export function canPlay(state: DosGameState, card: Card): boolean {
   if (state.mustChooseColor) return false
+  if (state.choosingTarget) return false
 
   const top = state.discardPile[state.discardPile.length - 1]
 
@@ -245,10 +254,10 @@ export function canPlay(state: DosGameState, card: Card): boolean {
 function nextPlayer(state: DosGameState): void {
   state.justDrawnCard = null
   state.justDrawnPlayerIndex = null
-  state.currentPlayer = ((state.currentPlayer + 1) % 2) as 0 | 1
+  state.currentPlayer = (state.currentPlayer + 1) % state.numPlayers
 }
 
-function drawCardFromDeck(state: DosGameState, playerIndex: 0 | 1): Card | null {
+function drawCardFromDeck(state: DosGameState, playerIndex: number): Card | null {
   if (state.deck.length === 0) {
     const top = state.discardPile.pop()!
     state.deck = shuffle(state.discardPile)
@@ -265,13 +274,13 @@ function drawCardFromDeck(state: DosGameState, playerIndex: 0 | 1): Card | null 
 
 function checkAnnouncements(state: DosGameState): AnimationEvent[] {
   const events: AnimationEvent[] = []
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < state.numPlayers; i++) {
     const currentCount = state.hands[i].length
     if (currentCount !== state.lastCardCounts[i]) {
       if (currentCount === 1 && state.lastCardCounts[i] > 1) {
-        events.push({ kind: 'announcement', text: 'Uno!', playerIndex: i as 0 | 1 })
+        events.push({ kind: 'announcement', text: 'Uno!', playerIndex: i })
       } else if (currentCount === 2 && state.lastCardCounts[i] > 2) {
-        events.push({ kind: 'announcement', text: 'Dos!', playerIndex: i as 0 | 1 })
+        events.push({ kind: 'announcement', text: 'Dos!', playerIndex: i })
       }
       state.lastCardCounts[i] = currentCount
     }
@@ -280,20 +289,19 @@ function checkAnnouncements(state: DosGameState): AnimationEvent[] {
 }
 
 function checkWinner(state: DosGameState): AnimationEvent[] {
-  if (state.hands[0].length === 0) {
-    state.winner = 0
-    return [{ kind: 'victory', winnerIndex: 0, winnerName: state.playerNames[0] }]
-  }
-  if (state.hands[1].length === 0) {
-    state.winner = 1
-    return [{ kind: 'victory', winnerIndex: 1, winnerName: state.playerNames[1] }]
+  for (let i = 0; i < state.numPlayers; i++) {
+    if (state.hands[i].length === 0) {
+      state.winner = i
+      return [{ kind: 'victory', winnerIndex: i, winnerName: state.playerNames[i] }]
+    }
   }
   return []
 }
 
-export function handlePlayCard(state: DosGameState, playerIndex: 0 | 1, cardIndex: number): { events: AnimationEvent[], error?: string } {
+export function handlePlayCard(state: DosGameState, playerIndex: number, cardIndex: number): { events: AnimationEvent[], error?: string } {
   if (state.winner !== null) return { events: [], error: 'Game is over' }
   if (state.currentPlayer !== playerIndex) return { events: [], error: 'Not your turn' }
+  if (state.choosingTarget) return { events: [], error: 'Must choose a target first' }
   if (cardIndex < 0 || cardIndex >= state.hands[playerIndex].length) return { events: [], error: 'Invalid card index' }
 
   const card = state.hands[playerIndex][cardIndex]
@@ -321,58 +329,66 @@ export function handlePlayCard(state: DosGameState, playerIndex: 0 | 1, cardInde
     events.push({ kind: 'flip', isNowFlipped: state.isFlipped })
     nextPlayer(state)
   }
-  // Handle Gift
+  // Handle Gift — requires target selection
   else if (card.value === 'Gift') {
-    const opponentIndex = ((playerIndex + 1) % 2) as 0 | 1
-    const colorsToUse = state.isFlipped ? FLIPPED_COLORS : COLORS
+    if (state.numPlayers === 2) {
+      // Auto-target the only opponent
+      const opponentIndex = (playerIndex + 1) % 2
+      const colorsToUse = state.isFlipped ? FLIPPED_COLORS : COLORS
 
-    let randomGift: Card
-    if (Math.random() < 0.1) {
-      randomGift = { color: 'white', value: 'Half it up!' }
+      let randomGift: Card
+      if (Math.random() < 0.1) {
+        randomGift = { color: 'white', value: 'Half it up!' }
+      } else {
+        const giftOptions: Card[] = [
+          { color: 'wild', value: 'Wild' },
+          { color: colorsToUse[Math.floor(Math.random() * colorsToUse.length)], value: state.isFlipped ? '+20' : '+10' },
+          { color: colorsToUse[Math.floor(Math.random() * colorsToUse.length)], value: state.isFlipped ? '+5' : '+2' }
+        ]
+        randomGift = giftOptions[Math.floor(Math.random() * giftOptions.length)]
+      }
+      state.hands[opponentIndex].push(randomGift)
+      sortHands(state)
+      events.push({ kind: 'giftPlayed', recipientIndex: opponentIndex, giftCard: randomGift })
+      nextPlayer(state)
     } else {
-      const giftOptions: Card[] = [
-        { color: 'wild', value: 'Wild' },
-        { color: colorsToUse[Math.floor(Math.random() * colorsToUse.length)], value: state.isFlipped ? '+20' : '+10' },
-        { color: colorsToUse[Math.floor(Math.random() * colorsToUse.length)], value: state.isFlipped ? '+5' : '+2' }
-      ]
-      randomGift = giftOptions[Math.floor(Math.random() * giftOptions.length)]
+      state.choosingTarget = { playerIndex, cardType: 'Gift' }
     }
-    state.hands[opponentIndex].push(randomGift)
-    sortHands(state)
-    events.push({ kind: 'giftPlayed', recipientIndex: opponentIndex, giftCard: randomGift })
-    nextPlayer(state)
   }
-  // Handle Fairy Gobble
+  // Handle Fairy Gobble — requires target selection
   else if (card.value === 'Fairy Gobble') {
-    const opponentIndex = ((playerIndex + 1) % 2) as 0 | 1
-    if (state.hands[opponentIndex].length > 0) {
-      const randomIdx = Math.floor(Math.random() * state.hands[opponentIndex].length)
-      const stolenCard = state.hands[opponentIndex].splice(randomIdx, 1)[0]
-      events.push({ kind: 'fairyGobble', thiefIndex: playerIndex, stolenCard, stolenCardIndex: randomIdx })
+    if (state.numPlayers === 2) {
+      const opponentIndex = (playerIndex + 1) % 2
+      if (state.hands[opponentIndex].length > 0) {
+        const randomIdx = Math.floor(Math.random() * state.hands[opponentIndex].length)
+        const stolenCard = state.hands[opponentIndex].splice(randomIdx, 1)[0]
+        events.push({ kind: 'fairyGobble', thiefIndex: playerIndex, victimIndex: opponentIndex, stolenCard, stolenCardIndex: randomIdx })
+      }
+      nextPlayer(state)
+    } else {
+      // Check if any opponent has cards to steal
+      const hasTargets = state.hands.some((hand, i) => i !== playerIndex && hand.length > 0)
+      if (hasTargets) {
+        state.choosingTarget = { playerIndex, cardType: 'FairyGobble' }
+      } else {
+        nextPlayer(state)
+      }
     }
-    nextPlayer(state)
   }
   // Handle Half it up!
   else if (card.value === 'Half it up!') {
-    const count0 = Math.floor(state.hands[0].length / 2)
-    const count1 = Math.floor(state.hands[1].length / 2)
-
-    // Randomly select indices to remove
-    const indices0 = shuffle([...Array(state.hands[0].length).keys()])
-    const indices1 = shuffle([...Array(state.hands[1].length).keys()])
-    const toRemove0 = indices0.slice(0, count0).sort((a, b) => b - a)
-    const toRemove1 = indices1.slice(0, count1).sort((a, b) => b - a)
-
-    // Collect actual removed cards before splicing
-    const removedFrom0: Card[] = toRemove0.map(idx => state.hands[0][idx])
-    const removedFrom1: Card[] = toRemove1.map(idx => state.hands[1][idx])
-
-    // Remove cards (from end to preserve indices)
-    for (const idx of toRemove0) state.hands[0].splice(idx, 1)
-    for (const idx of toRemove1) state.hands[1].splice(idx, 1)
+    const removedCards: Card[][] = []
+    for (let p = 0; p < state.numPlayers; p++) {
+      const count = Math.floor(state.hands[p].length / 2)
+      const indices = shuffle([...Array(state.hands[p].length).keys()])
+      const toRemove = indices.slice(0, count).sort((a, b) => b - a)
+      const removed: Card[] = toRemove.map(idx => state.hands[p][idx])
+      for (const idx of toRemove) state.hands[p].splice(idx, 1)
+      removedCards.push(removed)
+    }
 
     sortHands(state)
-    events.push({ kind: 'halfItUp', removedCards: [removedFrom0, removedFrom1] })
+    events.push({ kind: 'halfItUp', removedCards })
 
     if (card === state.justDrawnCard) {
       state.justDrawnCard = null
@@ -428,11 +444,13 @@ export function handlePlayCard(state: DosGameState, playerIndex: 0 | 1, cardInde
     }
     nextPlayer(state)
   }
-  // Handle Skip
+  // Handle Skip — skip the next player
   else if (card.value === 'Skip') {
     state.justDrawnCard = null
     state.justDrawnPlayerIndex = null
-    // Same player goes again — don't call nextPlayer
+    // Skip advances past the next player
+    nextPlayer(state)
+    nextPlayer(state)
   }
   // Regular card
   else {
@@ -452,10 +470,11 @@ export function handlePlayCard(state: DosGameState, playerIndex: 0 | 1, cardInde
   return { events }
 }
 
-export function handleDraw(state: DosGameState, playerIndex: 0 | 1): { events: AnimationEvent[], error?: string } {
+export function handleDraw(state: DosGameState, playerIndex: number): { events: AnimationEvent[], error?: string } {
   if (state.winner !== null) return { events: [], error: 'Game is over' }
   if (state.currentPlayer !== playerIndex) return { events: [], error: 'Not your turn' }
   if (state.mustChooseColor) return { events: [], error: 'Must choose a color first' }
+  if (state.choosingTarget) return { events: [], error: 'Must choose a target first' }
 
   const events: AnimationEvent[] = []
 
@@ -469,21 +488,12 @@ export function handleDraw(state: DosGameState, playerIndex: 0 | 1): { events: A
     state.justDrawnCard = null
     state.justDrawnPlayerIndex = null
     events.push({ kind: 'cardsDrawn', playerIndex, count })
-    // Same player gets another turn after drawing penalty
   } else {
     const drawn = drawCardFromDeck(state, playerIndex)
     if (drawn) {
       events.push({ kind: 'cardsDrawn', playerIndex, count: 1 })
-      if (canPlay(state, drawn)) {
-        state.justDrawnCard = drawn
-        state.justDrawnPlayerIndex = playerIndex
-        // Don't advance turn — let player decide to play or pass
-      } else {
-        state.justDrawnCard = drawn
-        state.justDrawnPlayerIndex = playerIndex
-        // Auto-pass after client shows the card briefly
-        // Client will send a pass message after showing the card
-      }
+      state.justDrawnCard = drawn
+      state.justDrawnPlayerIndex = playerIndex
     }
   }
 
@@ -491,7 +501,7 @@ export function handleDraw(state: DosGameState, playerIndex: 0 | 1): { events: A
   return { events }
 }
 
-export function handlePass(state: DosGameState, playerIndex: 0 | 1): { events: AnimationEvent[], error?: string } {
+export function handlePass(state: DosGameState, playerIndex: number): { events: AnimationEvent[], error?: string } {
   if (state.winner !== null) return { events: [], error: 'Game is over' }
   if (state.currentPlayer !== playerIndex) return { events: [], error: 'Not your turn' }
 
@@ -502,7 +512,7 @@ export function handlePass(state: DosGameState, playerIndex: 0 | 1): { events: A
   return { events: [] }
 }
 
-export function handleChooseColor(state: DosGameState, playerIndex: 0 | 1, color: string): { events: AnimationEvent[], error?: string } {
+export function handleChooseColor(state: DosGameState, playerIndex: number, color: string): { events: AnimationEvent[], error?: string } {
   if (state.winner !== null) return { events: [], error: 'Game is over' }
   if (state.currentPlayer !== playerIndex) return { events: [], error: 'Not your turn' }
   if (!state.mustChooseColor) return { events: [], error: 'Not choosing a color' }
@@ -527,5 +537,47 @@ export function handleChooseColor(state: DosGameState, playerIndex: 0 | 1, color
 
   const events: AnimationEvent[] = []
   events.push(...checkWinner(state))
+  return { events }
+}
+
+export function handleChooseTarget(state: DosGameState, playerIndex: number, targetIndex: number): { events: AnimationEvent[], error?: string } {
+  if (!state.choosingTarget) return { events: [], error: 'Not choosing a target' }
+  if (state.choosingTarget.playerIndex !== playerIndex) return { events: [], error: 'Not your turn to choose' }
+  if (targetIndex === playerIndex) return { events: [], error: 'Cannot target yourself' }
+  if (targetIndex < 0 || targetIndex >= state.numPlayers) return { events: [], error: 'Invalid target' }
+
+  const events: AnimationEvent[] = []
+  const { cardType } = state.choosingTarget
+
+  if (cardType === 'Gift') {
+    const colorsToUse = state.isFlipped ? FLIPPED_COLORS : COLORS
+    let randomGift: Card
+    if (Math.random() < 0.1) {
+      randomGift = { color: 'white', value: 'Half it up!' }
+    } else {
+      const giftOptions: Card[] = [
+        { color: 'wild', value: 'Wild' },
+        { color: colorsToUse[Math.floor(Math.random() * colorsToUse.length)], value: state.isFlipped ? '+20' : '+10' },
+        { color: colorsToUse[Math.floor(Math.random() * colorsToUse.length)], value: state.isFlipped ? '+5' : '+2' }
+      ]
+      randomGift = giftOptions[Math.floor(Math.random() * giftOptions.length)]
+    }
+    state.hands[targetIndex].push(randomGift)
+    sortHands(state)
+    events.push({ kind: 'giftPlayed', recipientIndex: targetIndex, giftCard: randomGift })
+  } else if (cardType === 'FairyGobble') {
+    if (state.hands[targetIndex].length > 0) {
+      const randomIdx = Math.floor(Math.random() * state.hands[targetIndex].length)
+      const stolenCard = state.hands[targetIndex].splice(randomIdx, 1)[0]
+      events.push({ kind: 'fairyGobble', thiefIndex: playerIndex, victimIndex: targetIndex, stolenCard, stolenCardIndex: randomIdx })
+    }
+  }
+
+  state.choosingTarget = null
+  nextPlayer(state)
+
+  events.push(...checkAnnouncements(state))
+  events.push(...checkWinner(state))
+
   return { events }
 }
