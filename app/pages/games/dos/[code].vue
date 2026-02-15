@@ -131,7 +131,12 @@ watch(animationQueue, (queue) => {
   <div class="dos-game min-h-screen text-white" style="background-color: #48aaff;">
     <!-- Disconnect banner -->
     <div v-if="disconnectedNames.length > 0" class="dos-disconnect-banner">
-      {{ disconnectedNames.join(', ') }} disconnected — waiting for reconnection...
+      {{ disconnectedNames.join(', ') }} is currently offline
+    </div>
+
+    <!-- Async play hint -->
+    <div v-if="gameState && gameState.currentPlayer !== gameState.myIndex && gameState.winner === null" class="dos-disconnect-banner" style="background: rgba(0,0,0,0.3);">
+      Waiting for opponent — you can leave and come back later
     </div>
 
     <!-- Error state -->

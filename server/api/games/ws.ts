@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken'
 import type { Peer } from 'crossws'
 import type { ClientMessage, ServerMessage, AnimationEvent } from '../../game/dos/types'
-import { getGame, createGame, removeGame, getSanitizedState } from '../../game/dos/state'
+import { getGame, createGame, removeGame, getSanitizedState, saveGameToDb, loadGameFromDb } from '../../game/dos/state'
 import { handlePlayCard, handleDraw, handlePass, handleChooseColor, handleChooseTarget } from '../../game/dos/logic'
 
 interface PeerContext {
@@ -129,7 +129,7 @@ export default defineWebSocketHandler({
         playerIndex = existingEntry.index
       } else {
         // Check if game is already playing (reconnection scenario for guests)
-        const existingGame = getGame(code)
+        const existingGame = getGame(code) || await loadGameFromDb(code)
         if (existingGame) {
           const existingIdx = existingGame.playerNames.indexOf(playerName)
           if (existingIdx >= 0) {
@@ -160,8 +160,8 @@ export default defineWebSocketHandler({
     }
     const peers = roomPeers.get(code)!
 
-    // Handle reconnection to active game
-    const existingGame = getGame(code)
+    // Handle reconnection to active game (check memory first, then DB)
+    const existingGame = getGame(code) || await loadGameFromDb(code)
     if (existingGame) {
       existingGame.connected[playerIndex] = true
       if (existingGame.disconnectTimers[playerIndex]) {
@@ -241,6 +241,33 @@ export default defineWebSocketHandler({
 
       // Sort lobby by index to ensure consistent ordering
       lobby.sort((a, b) => a.index - b.index)
+
+      // Reassign contiguous indices (0, 1, 2, ...) to fix gaps from disconnected guests
+      const peers = roomPeers.get(ctx.roomCode)
+      for (let i = 0; i < lobby.length; i++) {
+        const entry = lobby[i]!
+        const oldIndex = entry.index
+        const newIndex = i
+        if (oldIndex !== newIndex) {
+          // Update peer context for this player
+          for (const [, pctx] of peerContexts) {
+            if (pctx.roomCode === ctx.roomCode && pctx.playerIndex === oldIndex) {
+              pctx.playerIndex = newIndex
+              break
+            }
+          }
+          // Update roomPeers map
+          if (peers) {
+            const peer = peers.get(oldIndex)
+            if (peer) {
+              peers.delete(oldIndex)
+              peers.set(newIndex, peer)
+            }
+          }
+          entry.index = newIndex
+        }
+      }
+
       const playerNames = lobby.map(p => p.name)
 
       // Create game state
@@ -248,6 +275,9 @@ export default defineWebSocketHandler({
 
       // Update DB
       await sql`UPDATE game_rooms SET status = 'playing', player_names = ${JSON.stringify(playerNames)}, updated_at = now() WHERE code = ${ctx.roomCode}`
+
+      // Save game state to DB
+      await saveGameToDb(ctx.roomCode)
 
       // Broadcast game started
       broadcastToRoom(ctx.roomCode, { type: 'gameStarted' })
@@ -302,9 +332,12 @@ export default defineWebSocketHandler({
     // Broadcast updated state to each player
     broadcastState(ctx.roomCode)
 
+    // Save state to DB
+    await saveGameToDb(ctx.roomCode)
+
     // Check for game over
     if (game.winner !== null) {
-      const winnerName = game.playerNames[game.winner]
+      const winnerName = game.playerNames[game.winner] ?? 'Unknown'
       broadcastToRoom(ctx.roomCode, { type: 'gameOver', winner: game.winner, winnerName })
 
       await sql`
@@ -332,17 +365,11 @@ export default defineWebSocketHandler({
         }
       }
 
-      // Keep game alive for 60s to allow reconnection
-      game.disconnectTimers[ctx.playerIndex] = setTimeout(() => {
-        const currentGame = getGame(ctx.roomCode)
-        if (currentGame && !currentGame.connected[ctx.playerIndex]) {
-          // If all disconnected, clean up
-          if (currentGame.connected.every(c => !c)) {
-            removeGame(ctx.roomCode)
-            roomPeers.delete(ctx.roomCode)
-          }
-        }
-      }, 60000)
+      // If all players disconnected, evict from memory (game persists in DB)
+      if (game.connected.every(c => !c)) {
+        removeGame(ctx.roomCode)
+        roomPeers.delete(ctx.roomCode)
+      }
     } else {
       // No active game — remove from lobby and peers
       const peers = roomPeers.get(ctx.roomCode)
