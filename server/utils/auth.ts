@@ -24,3 +24,14 @@ export function getAuthUser(event: H3Event) {
   const token = getCookie(event, 'auth-token')
   return token ? verifyToken(token) : null
 }
+
+export async function requireSuperadmin(event: H3Event) {
+  const user = requireAuth(event)
+
+  const result = await sql`SELECT superadmin FROM users WHERE id = ${user.userId}`
+  if (!result[0]?.superadmin) {
+    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+  }
+
+  return user
+}

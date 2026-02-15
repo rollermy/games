@@ -19,6 +19,9 @@ const config = useRuntimeConfig()
             <span class="text-(--ui-text-muted) text-sm hidden sm:inline">
               {{ user?.display_name || user?.email }}
             </span>
+            <UButton v-if="user?.superadmin" to="/admin" variant="ghost" size="sm">
+              Admin
+            </UButton>
             <UButton to="/profile" variant="ghost" size="sm">
               Profile
             </UButton>
