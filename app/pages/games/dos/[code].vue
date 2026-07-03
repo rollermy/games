@@ -27,6 +27,7 @@ const {
   chooseColor,
   chooseTarget,
   startGame,
+  playAgain,
   shiftAnimation,
   flushDeferredState
 } = useGameSocket()
@@ -262,7 +263,11 @@ watch(animationQueue, (queue) => {
         <p class="text-2xl mb-8">
           {{ gameOver?.winnerName || (gameState?.winner !== null ? gameState?.playerNames[gameState.winner] : '') }} wins!
         </p>
-        <UButton to="/dashboard" size="lg">Back to Dashboard</UButton>
+        <div class="flex flex-col items-center gap-3">
+          <UButton v-if="role === 'host'" size="lg" @click="playAgain">Play Again</UButton>
+          <p v-else class="opacity-70">Waiting for {{ roomData?.hostName || 'the host' }} to start a new game...</p>
+          <UButton to="/dashboard" size="lg" variant="soft">Back to Dashboard</UButton>
+        </div>
       </div>
     </div>
 

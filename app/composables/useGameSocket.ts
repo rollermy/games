@@ -83,6 +83,7 @@ export function useGameSocket() {
           break
         case 'gameStarted':
           gameStarted.value = true
+          gameOver.value = null
           break
         case 'animation':
           if (msg.event.kind === 'halfItUp' || msg.event.kind === 'fairyGobble') {
@@ -149,6 +150,10 @@ export function useGameSocket() {
     send({ type: 'chooseTarget', targetIndex })
   }
 
+  function playAgain() {
+    send({ type: 'playAgain' })
+  }
+
   function disconnect() {
     deliberateClose = true
     lastConnectArgs = null
@@ -195,6 +200,7 @@ export function useGameSocket() {
     chooseColor,
     startGame,
     chooseTarget,
+    playAgain,
     disconnect,
     shiftAnimation,
     flushDeferredState

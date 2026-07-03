@@ -290,6 +290,30 @@ export default defineWebSocketHandler({
       return
     }
 
+    // Restart a finished game in the same room with the same players
+    if (msg.type === 'playAgain') {
+      if (ctx.playerIndex !== 0) {
+        send(peer, { type: 'error', message: 'Only the host can start a new game' })
+        return
+      }
+
+      const finishedGame = getGame(ctx.roomCode)
+      if (!finishedGame || finishedGame.winner === null) {
+        send(peer, { type: 'error', message: 'Game is not finished' })
+        return
+      }
+
+      const newGame = createGame(ctx.roomCode, finishedGame.playerNames)
+      newGame.connected = [...finishedGame.connected]
+
+      await sql`UPDATE game_rooms SET status = 'playing', winner = null, updated_at = now() WHERE code = ${ctx.roomCode}`
+      await saveGameToDb(ctx.roomCode)
+
+      broadcastToRoom(ctx.roomCode, { type: 'gameStarted' })
+      broadcastState(ctx.roomCode)
+      return
+    }
+
     const game = getGame(ctx.roomCode)
     if (!game) {
       send(peer, { type: 'error', message: 'Game not found' })

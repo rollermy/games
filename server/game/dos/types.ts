@@ -62,6 +62,7 @@ export type ClientMessage =
   | { type: 'chooseColor'; color: string }
   | { type: 'chooseTarget'; targetIndex: number }
   | { type: 'startGame' }
+  | { type: 'playAgain' }
 
 // Server → Client messages
 export type ServerMessage =
