@@ -198,7 +198,7 @@ export function createInitialState(roomCode: string, playerNames: string[]): Dos
     discardPile,
     hands,
     numPlayers,
-    currentPlayer: 0,
+    currentPlayer: Math.floor(Math.random() * numPlayers),
     winner: null,
     isFlipped: false,
     flipMaps,
