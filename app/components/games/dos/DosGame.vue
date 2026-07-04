@@ -105,8 +105,9 @@ function canPlayCard(card: Card, top: Card): boolean {
   if (card.color === 'wild') return true
   if (card.color === 'white') return true
   if (top.color === 'white') return true
-  if (top.color === 'wild' && props.state.chosenWildColor) {
-    return card.color === props.state.chosenWildColor
+  if (top.color === 'wild') {
+    // No chosen color for a top wild shouldn't occur in normal play; allow anything so the game can't soft-lock
+    return props.state.chosenWildColor ? card.color === props.state.chosenWildColor : true
   }
   return card.color === top.color || card.value === top.value
 }

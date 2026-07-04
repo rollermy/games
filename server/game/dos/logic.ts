@@ -184,13 +184,14 @@ export function createInitialState(roomCode: string, playerNames: string[]): Dos
     }
   }
 
-  // First discard card must be a plain number card (no wilds, specials, or action cards)
-  let firstCard: Card
-  do {
-    firstCard = deck.pop()!
+  // First discard card must be a plain number card (no wilds, specials, or action cards);
+  // rejected cards go to the bottom of the deck
+  let firstCard = deck.pop()!
+  while (firstCard.color === 'wild' || firstCard.color === 'white' || isNaN(parseInt(firstCard.value))) {
     deck.unshift(firstCard)
-  } while (firstCard.color === 'wild' || firstCard.color === 'white' || isNaN(parseInt(firstCard.value)))
-  const discardPile = [deck.pop()!]
+    firstCard = deck.pop()!
+  }
+  const discardPile = [firstCard]
 
   const state: DosGameState = {
     roomCode,
@@ -245,8 +246,9 @@ export function canPlay(state: DosGameState, card: Card): boolean {
   if (card.color === 'wild') return true
   if (card.color === 'white') return true
   if (top.color === 'white') return true
-  if (top.color === 'wild' && state.chosenWildColor) {
-    return card.color === state.chosenWildColor
+  if (top.color === 'wild') {
+    // No chosen color for a top wild shouldn't occur in normal play; allow anything so the game can't soft-lock
+    return state.chosenWildColor ? card.color === state.chosenWildColor : true
   }
   return card.color === top.color || card.value === top.value
 }
